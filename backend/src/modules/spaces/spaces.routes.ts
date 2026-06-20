@@ -10,4 +10,4 @@ spaceRouter.post("/spaces/join", getGuestIdentifier, SpaceController.joinSpace);
 spaceRouter.get("/spaces/me", auth, SpaceController.getMySpaces);
 spaceRouter.get("/spaces/:spaceId", SpaceController.getSpaceDetails);
 spaceRouter.delete("/spaces/:spaceId", auth, SpaceController.deleteSpace);
-export default spaceRouter
+export default spaceRouter                                              
