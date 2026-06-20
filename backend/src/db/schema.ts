@@ -75,6 +75,8 @@ export const spaceMembers = pgTable("space_members", {
 
   guestName: varchar("guest_name", { length: 255 }).notNull(),
 
+  guestUuid: varchar("guest_uuid", { length: 255 }).notNull(),
+
   joinedAt: timestamp("joined_at").defaultNow().notNull(),
 })
 

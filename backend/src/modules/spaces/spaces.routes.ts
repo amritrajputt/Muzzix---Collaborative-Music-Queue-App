@@ -1,12 +1,13 @@
 import Router from "express"
-import { requireAuth } from "@clerk/express"
+import { auth } from "../../common/middleware/auth.middleware.js"
+import { getGuestIdentifier } from "../../common/middleware/guest.middleware.js"
 import SpaceController from "./spaces.controller.js"
 const spaceRouter = Router()
 
 
-spaceRouter.post("/spaces",requireAuth(),SpaceController.createSpace);
-spaceRouter.post("/spaces/join",requireAuth(),SpaceController.joinSpace);
-spaceRouter.get("/spaces/:id",requireAuth(),SpaceController.getSpaceDetails);
-spaceRouter.get("/delete",requireAuth(),SpaceController.deleteSpace);
-spaceRouter.get("/spaces/me",requireAuth(),SpaceController.getMySpaces);
+spaceRouter.post("/spaces", auth, SpaceController.createSpace);
+spaceRouter.post("/spaces/join", getGuestIdentifier, SpaceController.joinSpace);
+spaceRouter.get("/spaces/:id", SpaceController.getSpaceDetails);
+spaceRouter.get("/delete", auth, SpaceController.deleteSpace);
+spaceRouter.get("/spaces/me", auth, SpaceController.getMySpaces);
 export default spaceRouter

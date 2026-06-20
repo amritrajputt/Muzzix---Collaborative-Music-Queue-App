@@ -1,0 +1,1 @@
+ALTER TABLE "space_members" ADD COLUMN "guest_uuid" varchar(255) NOT NULL;
