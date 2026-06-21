@@ -1,6 +1,6 @@
 import { Server, Socket } from "socket.io"
 import { JoinSpacePayload, LeaveSpacePayload, ReportDurationPayload } from "./socket.types.js"
-import { emitToRoom } from "./socket.server.js"
+import { emitToRoom } from "../redis/redis.pubsub.js"
 import { NowPlayingService } from "../nowPlaying/nowPlaying.service.js"
 
 export const registerSocketEvents = (socket: Socket, io: Server) => {

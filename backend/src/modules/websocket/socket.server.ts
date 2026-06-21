@@ -1,7 +1,7 @@
 import { Server } from "socket.io"
 import { Server as HttpServer } from "http"
 import { registerSocketEvents } from "./socket.events.js"
-import { publishToRoom, subscriber, ROOM_EVENTS_CHANNEL } from "../redis/redis.pubsub.js"
+import { subscriber, ROOM_EVENTS_CHANNEL } from "../redis/redis.pubsub.js"
 export let io: Server | null = null
 
 export const initSocketServer = (httpServer: HttpServer): Server => {
@@ -19,11 +19,6 @@ export const initSocketServer = (httpServer: HttpServer): Server => {
   })
 
   return io
-}
-
-
-export const emitToRoom = (eventName: string, data: any, spaceId: string) => {
-  publishToRoom(spaceId, eventName, data)
 }
 
 export const subscribeToRoomEvents = (io: Server) => {

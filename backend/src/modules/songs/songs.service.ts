@@ -2,7 +2,7 @@ import { isValidYoutubeLink, extractVideoId } from "../../common/utils/youtubeLi
 import ApiError from "../../common/errors/ApiError.js"
 import { RedisSortedSet } from "../redis/redis.sortedSet.js" 
 import { RedisRateLimitAndVotes } from "../redis/redis.rateLimitAndVotes.js" 
-import { emitToRoom } from "../websocket/socket.server.js"
+import { emitToRoom } from "../redis/redis.pubsub.js"
 import { NowPlayingService } from "../nowPlaying/nowPlaying.service.js"
 
 class SongService {

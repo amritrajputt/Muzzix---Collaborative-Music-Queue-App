@@ -10,12 +10,12 @@ export class RedisBase {
   private static connectPromise: Promise<any> | null = null
 
   protected static async connect() {
-    if (!this.connectPromise) {
-      this.connectPromise = this.client.connect().catch((err) => {
-        this.connectPromise = null
+    if (!RedisBase.connectPromise) {
+      RedisBase.connectPromise = RedisBase.client.connect().catch((err) => {
+        RedisBase.connectPromise = null
         throw err
       })
     }
-    await this.connectPromise
+    await RedisBase.connectPromise
   }
 }

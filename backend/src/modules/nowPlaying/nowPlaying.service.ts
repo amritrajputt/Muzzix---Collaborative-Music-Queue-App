@@ -1,5 +1,5 @@
 import { RedisSortedSet } from "../redis/redis.sortedSet.js"
-import { emitToRoom } from "../websocket/socket.server.js"
+import { emitToRoom } from "../redis/redis.pubsub.js"
 import ApiError from "../../common/errors/ApiError.js"
 import { NowPlayingState } from "./nowPlaying.types.js"
 

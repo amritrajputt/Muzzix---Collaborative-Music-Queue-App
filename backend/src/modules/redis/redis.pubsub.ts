@@ -16,3 +16,7 @@ subscriber.on("error", (err) => {
 export const publishToRoom = async (spaceId: string, event: string, data: any) => {
   await publisher.publish(ROOM_EVENTS_CHANNEL, JSON.stringify({ spaceId, event, data }))
 }
+
+export const emitToRoom = (eventName: string, data: any, spaceId: string) => {
+  publishToRoom(spaceId, eventName, data)
+}
