@@ -1,7 +1,7 @@
 import { Server } from "socket.io"
 import { Server as HttpServer } from "http"
 import { registerSocketEvents } from "./socket.events.js"
-
+import { publishToRoom, subscriber, ROOM_EVENTS_CHANNEL } from "../redis/redis.pubsub.js"
 export let io: Server | null = null
 
 export const initSocketServer = (httpServer: HttpServer): Server => {
@@ -12,6 +12,7 @@ export const initSocketServer = (httpServer: HttpServer): Server => {
   })
 
   io = ioInstance
+  subscribeToRoomEvents(ioInstance)  
 
   ioInstance.on("connection", (socket) => {
     registerSocketEvents(socket, ioInstance)
@@ -20,8 +21,27 @@ export const initSocketServer = (httpServer: HttpServer): Server => {
   return io
 }
 
+
 export const emitToRoom = (eventName: string, data: any, spaceId: string) => {
-  if (io) {
-    io.in(spaceId).emit(eventName, data)
-  }
+  publishToRoom(spaceId, eventName, data)
+}
+
+export const subscribeToRoomEvents = (io: Server) => {
+  subscriber.subscribe(ROOM_EVENTS_CHANNEL, (err) => {
+    if (err) {
+      console.error("Failed to subscribe:", err)
+      return
+    }
+  })
+
+  subscriber.on("message", (channel, message) => {
+    if (channel === ROOM_EVENTS_CHANNEL) {
+      try {
+        const { spaceId, event, data } = JSON.parse(message)
+        io.in(spaceId).emit(event, data)
+      } catch (error) {
+        console.error("Failed to parse room-events Pub/Sub message:", error)
+      }
+    }
+  })
 }
