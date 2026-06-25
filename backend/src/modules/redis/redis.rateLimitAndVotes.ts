@@ -13,6 +13,12 @@ export class RedisRateLimitAndVotes extends RedisBase {
     await this.client.sAdd(key, guestUuid)
   }
 
+  static async clearVotes(spaceId: string, songId: string): Promise<void> {
+    await this.connect()
+    const key = `voted:${spaceId}:${songId}`
+    await this.client.del(key)
+  }
+
   static async incrementRateLimit(spaceId: string, guestUuid: string, expirySeconds: number = 1800): Promise<number> {
     await this.connect()
     const key = `rateLimit:${spaceId}:${guestUuid}`
