@@ -1,0 +1,111 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import "tailwindcss";
+
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+  html {
+    scroll-behavior: smooth;
+    overflow: hidden;
+    height: 100%;
+  }
+  body {
+    background-color: #030014;
+    color: #f8fafc;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    height: 100%;
+  }
+  #root {
+    height: 100%;
+    overflow: hidden;
+  }
+}
+
+/* ---- Scroll Container ---- */
+.scroll-container {
+  height: 100vh;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  overscroll-behavior-y: none; /* prevent pull-to-refresh jank */
+}
+
+.scroll-container::-webkit-scrollbar {
+  width: 0px;
+}
+
+/* ---- Section Base ---- */
+.scroll-section {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ---- Background Glow Orbs (no jitter) ---- */
+.glow-orb {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(100px);
+  opacity: 0;
+  animation: orb-pulse 8s ease-in-out infinite;
+}
+
+.glow-orb-1 {
+  width: 600px;
+  height: 600px;
+  top: -100px;
+  right: -100px;
+  background: radial-gradient(circle, rgba(236, 72, 153, 0.4) 0%, transparent 70%);
+  animation-delay: 0s;
+}
+.glow-orb-2 {
+  width: 500px;
+  height: 500px;
+  bottom: -100px;
+  left: -50px;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.35) 0%, transparent 70%);
+  animation-delay: 3s;
+}
+.glow-orb-3 {
+  width: 400px;
+  height: 400px;
+  top: 30%;
+  left: 30%;
+  background: radial-gradient(circle, rgba(6, 182, 212, 0.25) 0%, transparent 70%);
+  animation-delay: 1.5s;
+}
+
+@keyframes orb-pulse {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50%       { opacity: 0.8; transform: scale(1.15); }
+}
+
+/* ---- Now Playing Card ---- */
+@keyframes now-playing-bar {
+  0%, 100% { height: 4px; }
+  50%       { height: 16px; }
+}
+
+.now-playing-bar-1 { animation: now-playing-bar 0.9s ease-in-out infinite; }
+.now-playing-bar-2 { animation: now-playing-bar 0.9s ease-in-out 0.15s infinite; }
+.now-playing-bar-3 { animation: now-playing-bar 0.9s ease-in-out 0.30s infinite; }
+.now-playing-bar-4 { animation: now-playing-bar 0.9s ease-in-out 0.45s infinite; }
+.now-playing-bar-5 { animation: now-playing-bar 0.9s ease-in-out 0.60s infinite; }
+
+/* ---- Scroll indicator bounce (subtle) ---- */
+@keyframes bounce-down {
+  0%, 100% { transform: translateY(0) translateX(-50%); }
+  50%       { transform: translateY(8px) translateX(-50%); }
+}
+.scroll-bounce {
+  animation: bounce-down 2s ease-in-out infinite;
+}
