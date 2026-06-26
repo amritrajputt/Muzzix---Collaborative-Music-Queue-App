@@ -25,7 +25,7 @@ export const MusicPlayerCard = ({
 }: MusicPlayerCardProps) => {
 
   return (
-    <div className="p-6 rounded-3xl bg-gradient-to-b from-[#0e0a24]/90 to-[#070514]/95 border border-white/[0.08] shadow-2xl backdrop-blur-xl relative overflow-hidden group flex flex-col items-center text-center">
+    <div className="p-6 rounded-3xl bg-[#09061a]/95 border border-white/[0.08] shadow-2xl backdrop-blur-xl relative overflow-hidden group flex flex-col items-center text-center">
       {/* YouTube Player Container */}
       <div className="w-full my-4 aspect-video rounded-2xl overflow-hidden border border-white/10 relative shadow-2xl bg-black">
         <div id="youtube-player-element" ref={onPlayerContainerMount} className="w-full h-full" />
@@ -47,7 +47,7 @@ export const MusicPlayerCard = ({
       <div className="w-full px-1 mb-6">
         <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden relative cursor-pointer group/bar">
           <div
-            className="h-full bg-gradient-to-r from-pink-500 to-purple-500 rounded-full group-hover/bar:bg-pink-400 transition-all"
+            className="h-full bg-pink-500 rounded-full group-hover/bar:bg-pink-400 transition-all"
             style={{ width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%` }}
           />
         </div>
@@ -81,7 +81,7 @@ export const MusicPlayerCard = ({
         <button
           onClick={onPlayPause}
           disabled={!nowPlaying}
-          className="w-10 h-10 rounded-full bg-gradient-to-r from-pink-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-pink-500/20 transition-transform select-none hover:scale-105 active:scale-95 border-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-10 h-10 rounded-full bg-pink-500 hover:bg-pink-600 flex items-center justify-center text-white shadow-lg shadow-pink-500/20 transition-transform select-none hover:scale-105 active:scale-95 border-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           title={isPlaying ? 'Pause' : 'Play'}
         >
           {isPlaying ? (

@@ -10,6 +10,8 @@ import RoomInfoSidebar from '../components/RoomInfoSidebar';
 import QueueSubmissionForm from '../components/QueueSubmissionForm';
 import QueueList from '../components/QueueList';
 import MusicPlayerCard from '../components/MusicPlayerCard';
+import bgVideo from '../assets/171912-846103594.mp4';
+import { useToast } from '../contexts/ToastContext';
 
 declare global {
   interface Window {
@@ -37,6 +39,7 @@ interface LeaderMember {
 }
 
 export function SpacePage({ spaceId }: SpacePageProps) {
+  const { showToast } = useToast();
   // Session credentials
   const [guestName, setGuestName] = useState<string | null>(() => localStorage.getItem(`guestName_${spaceId}`));
   const [guestUuid, setGuestUuid] = useState<string | null>(() => localStorage.getItem(`guestUuid_${spaceId}`));
@@ -110,10 +113,13 @@ export function SpacePage({ spaceId }: SpacePageProps) {
   // Sync playback position to server's startedAt
   const syncPlaybackWithServer = (player: any) => {
     if (!nowPlayingRef.current || !nowPlayingRef.current.startedAt) return;
-    const elapsedSeconds = (Date.now() - nowPlayingRef.current.startedAt) / 1000;
+    const isPaused = nowPlayingRef.current.isPlaying === false;
+    const elapsedSeconds = isPaused
+      ? (nowPlayingRef.current.pausedAt || 0)
+      : (Date.now() - nowPlayingRef.current.startedAt) / 1000;
     const totalDuration = nowPlayingRef.current.duration || (player.getDuration ? player.getDuration() : 0);
     
-    if (totalDuration > 0 && elapsedSeconds >= totalDuration) {
+    if (!isPaused && totalDuration > 0 && elapsedSeconds >= totalDuration) {
       console.log('[YT Player Debug] Elapsed time exceeds duration, emitting song-ended');
       const currentSongId = nowPlayingRef.current?.songId;
       if (socketRef.current && currentSongId) {
@@ -125,8 +131,14 @@ export function SpacePage({ spaceId }: SpacePageProps) {
       return;
     }
 
-    if (elapsedSeconds > 0 && (!totalDuration || elapsedSeconds < totalDuration)) {
+    if (elapsedSeconds >= 0 && (!totalDuration || elapsedSeconds < totalDuration)) {
       player.seekTo(elapsedSeconds, true);
+    }
+
+    if (isPaused) {
+      player.pauseVideo();
+    } else {
+      player.playVideo();
     }
   };
 
@@ -153,7 +165,10 @@ export function SpacePage({ spaceId }: SpacePageProps) {
     }
 
     try {
-      const elapsedSeconds = currentSong.startedAt ? (Date.now() - currentSong.startedAt) / 1000 : 0;
+      const isPaused = currentSong.isPlaying === false;
+      const elapsedSeconds = isPaused
+        ? (currentSong.pausedAt || 0)
+        : (currentSong.startedAt ? (Date.now() - currentSong.startedAt) / 1000 : 0);
       const startSec = elapsedSeconds > 0 ? Math.floor(elapsedSeconds) : 0;
 
       console.log('[YT Player Debug] Instantiating window.YT.Player with videoId:', currentSong.songId, 'startSec:', startSec);
@@ -162,7 +177,7 @@ export function SpacePage({ spaceId }: SpacePageProps) {
         width: '100%',
         videoId: currentSong.songId,
         playerVars: {
-          autoplay: 1,
+          autoplay: isPaused ? 0 : 1,
           controls: 0,
           modestbranding: 1,
           rel: 0,
@@ -272,13 +287,21 @@ export function SpacePage({ spaceId }: SpacePageProps) {
     });
     if (playerRef.current && nowPlaying?.songId) {
       if (typeof playerRef.current.loadVideoById === 'function') {
-        const elapsedSeconds = nowPlaying.startedAt ? (Date.now() - nowPlaying.startedAt) / 1000 : 0;
+        const isPaused = nowPlaying.isPlaying === false;
+        const elapsedSeconds = isPaused
+          ? (nowPlaying.pausedAt || 0)
+          : (nowPlaying.startedAt ? (Date.now() - nowPlaying.startedAt) / 1000 : 0);
         const startSecs = elapsedSeconds > 0 ? Math.floor(elapsedSeconds) : 0;
         console.log('[YT Player Debug] Loading video via loadVideoById:', nowPlaying.songId, 'start:', startSecs);
         playerRef.current.loadVideoById({
           videoId: nowPlaying.songId,
           startSeconds: startSecs
         });
+        if (isPaused) {
+          playerRef.current.pauseVideo();
+        } else {
+          playerRef.current.playVideo();
+        }
       } else {
         console.warn('[YT Player Debug] playerRef.current exists but loadVideoById is not a function');
       }
@@ -286,7 +309,7 @@ export function SpacePage({ spaceId }: SpacePageProps) {
       console.log('[YT Player Debug] Call initYoutubePlayer from song changes effect');
       initYoutubePlayer();
     }
-  }, [nowPlaying?.songId, nowPlaying?.startedAt]);
+  }, [nowPlaying?.songId, nowPlaying?.startedAt, nowPlaying?.isPlaying, nowPlaying?.pausedAt]);
 
   // Poll current time, duration and isPlaying state from player instance
   useEffect(() => {
@@ -403,6 +426,12 @@ export function SpacePage({ spaceId }: SpacePageProps) {
     try {
       const state = playerRef.current.getPlayerState();
       const nextIsPlaying = (state !== window.YT.PlayerState.PLAYING);
+
+      const isServerPaused = nowPlaying?.isPlaying === false;
+      const expectedServerTime = isServerPaused
+        ? (nowPlaying?.pausedAt || 0)
+        : (nowPlaying?.startedAt ? (Date.now() - nowPlaying.startedAt) / 1000 : 0);
+
       const currentTimeVal = playerRef.current.getCurrentTime() || 0;
 
       // Optimistically update local player state for responsiveness
@@ -416,9 +445,16 @@ export function SpacePage({ spaceId }: SpacePageProps) {
 
       // Only host triggers global synchronization
       if (isHost) {
+        if (nextIsPlaying && !isServerPaused) {
+          // If the server is already playing, the host just resumed locally due to autoplay block/lag.
+          // Seek to the expected server time and play locally.
+          playerRef.current.seekTo(expectedServerTime, true);
+          return;
+        }
+
         await api.post(`/spaces/${spaceId}/playback`, {
           isPlaying: nextIsPlaying,
-          currentTime: currentTimeVal
+          currentTime: nextIsPlaying ? expectedServerTime : currentTimeVal
         });
       }
     } catch (e) {
@@ -436,7 +472,7 @@ export function SpacePage({ spaceId }: SpacePageProps) {
       }
     } catch (err) {
       console.error('Failed to skip song:', err);
-      alert('Failed to skip song. Only the host is allowed to skip.');
+      showToast('Failed to skip song. Only the host is allowed to skip.', 'error');
     }
   };
 
@@ -466,11 +502,11 @@ export function SpacePage({ spaceId }: SpacePageProps) {
         setYoutubeURL('');
         fetchRoomData();
       } else {
-        alert(res?.message || 'Failed to add song.');
+        showToast(res?.message || 'Failed to add song.', 'error');
       }
     } catch (err: any) {
       console.error(err);
-      alert(err.response?.data?.message || 'Failed to add song. Ensure it is a valid YouTube link.');
+      showToast(err.response?.data?.message || 'Failed to add song. Ensure it is a valid YouTube link.', 'error');
     } finally {
       setAdding(false);
     }
@@ -529,6 +565,20 @@ export function SpacePage({ spaceId }: SpacePageProps) {
   if (!guestUuid || !guestName) {
     return (
       <div className="min-h-screen bg-[#030014] text-white flex items-center justify-center p-4 relative overflow-hidden">
+        {/* Background video */}
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover pointer-events-none opacity-30 z-0"
+        >
+          <source src={bgVideo} type="video/mp4" />
+        </video>
+
+        {/* Dark overlay for contrast and blur */}
+        <div className="absolute inset-0 bg-black/75 backdrop-blur-[3px] z-0 pointer-events-none" />
+
         {/* Glow lights */}
         <div className="absolute top-[-20%] left-[-20%] w-[60%] h-[60%] bg-pink-500/10 rounded-full blur-[140px] pointer-events-none" />
         <div className="absolute bottom-[-20%] right-[-20%] w-[60%] h-[60%] bg-purple-600/10 rounded-full blur-[140px] pointer-events-none" />
@@ -560,10 +610,27 @@ export function SpacePage({ spaceId }: SpacePageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-[#030014] text-white pt-24 pb-16 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-      {/* Background glow effects */}
-      <div className="absolute top-[-10%] left-[-15%] w-[45%] h-[45%] bg-purple-600/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-15%] w-[45%] h-[45%] bg-pink-500/10 rounded-full blur-[120px] pointer-events-none" />
+    <div className="min-h-screen bg-[#030014] text-white pt-24 pb-16 px-4 sm:px-6 lg:px-8 relative overflow-x-hidden">
+      {/* Background container to prevent scroll overflow from absolute glow elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+        {/* Background video */}
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover opacity-30"
+        >
+          <source src={bgVideo} type="video/mp4" />
+        </video>
+
+        {/* Dark overlay for contrast and blur */}
+        <div className="absolute inset-0 bg-black/75 backdrop-blur-[3px]" />
+
+        {/* Background glow effects */}
+        <div className="absolute top-[-10%] left-[-15%] w-[45%] h-[45%] bg-purple-600/10 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[-10%] right-[-15%] w-[45%] h-[45%] bg-pink-500/10 rounded-full blur-[120px]" />
+      </div>
 
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 relative z-10">
 

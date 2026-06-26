@@ -1,4 +1,4 @@
-import { createRootRoute, Link, Outlet } from '@tanstack/react-router'
+import { createRootRoute, Link, Outlet, useLocation, useNavigate } from '@tanstack/react-router'
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
 import { useState } from 'react'
 import { SignedIn, SignedOut, SignInButton, UserButton, useAuth } from '@clerk/clerk-react'
@@ -7,10 +7,17 @@ import { LoaderThree } from '../components/ui/loader'
 function Header() {
   const [open, setOpen] = useState(false)
   const { isLoaded } = useAuth()
+  const location = useLocation()
+  const navigate = useNavigate()
 
   const scrollTo = (id: string) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
     setOpen(false)
+    if (location.pathname === '/') {
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
+      window.history.pushState(null, '', `/#${id}`)
+    } else {
+      navigate({ to: '/', hash: id })
+    }
   }
 
   const links: [string, string][] = [
@@ -24,12 +31,19 @@ function Header() {
   return (
     <>
       <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-5 md:px-12 py-3 bg-transparent">
-        <button
-          onClick={() => scrollTo('home')}
-          className="text-base md:text-lg font-black tracking-[0.12em] uppercase text-white border-0 bg-transparent cursor-pointer hover:opacity-70 transition-opacity p-0"
+        <Link
+          to="/"
+          onClick={(e) => {
+            if (location.pathname === '/') {
+              e.preventDefault()
+              document.getElementById('home')?.scrollIntoView({ behavior: 'smooth' })
+              window.history.pushState(null, '', '/')
+            }
+          }}
+          className="text-base md:text-lg font-black tracking-[0.12em] uppercase text-white border-0 bg-transparent cursor-pointer hover:opacity-70 transition-opacity p-0 no-underline"
         >
           MUZZIX
-        </button>
+        </Link>
 
         <nav className="hidden md:flex items-center gap-8">
           {links.map(([label, id]) => (

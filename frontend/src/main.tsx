@@ -21,6 +21,7 @@ if (!PUBLISHABLE_KEY) {
 }
 
 import { AxiosInterceptorProvider } from './components/AxiosInterceptorProvider'
+import { ToastProvider } from './contexts/ToastContext'
 
 const rootElement = document.getElementById('root')!
 if (!rootElement.innerHTML) {
@@ -29,7 +30,9 @@ if (!rootElement.innerHTML) {
     <StrictMode>
       <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
         <AxiosInterceptorProvider>
-          <RouterProvider router={router} />
+          <ToastProvider>
+            <RouterProvider router={router} />
+          </ToastProvider>
         </AxiosInterceptorProvider>
       </ClerkProvider>
     </StrictMode>,

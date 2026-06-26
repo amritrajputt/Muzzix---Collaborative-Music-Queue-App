@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { SignedIn, SignedOut, SignInButton } from '@clerk/clerk-react';
 import { Link } from '@tanstack/react-router';
 import RoomJoinForm from '../components/RoomJoinForm';
@@ -9,6 +9,20 @@ function LandingPage() {
   const scrollTo = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
   };
+
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash) {
+      const elementId = hash.replace('#', '');
+      // Add a small delay to ensure rendering is complete
+      setTimeout(() => {
+        const element = document.getElementById(elementId);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+    }
+  }, []);
 
   return (
     <div className="w-full">
@@ -25,9 +39,8 @@ function LandingPage() {
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{ backgroundImage: "url('/hero-bg.png')" }}
         />
-        {/* Overlays */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/85 via-black/40 to-black/95" />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-transparent to-black/30" />
+        {/* Solid Overlays */}
+        <div className="absolute inset-0 bg-black/60" />
 
         {/* Centred content */}
         <div className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-5 sm:px-10 md:px-14 pt-20 pb-20">
@@ -53,14 +66,14 @@ function LandingPage() {
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full sm:w-auto">
             <SignedOut>
               <SignInButton mode="modal">
-                <button className="w-full sm:w-auto px-7 py-3.5 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold rounded-xl shadow-lg shadow-pink-500/30 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer">
+                <button className="w-full sm:w-auto px-7 py-3.5 bg-pink-500 hover:bg-pink-600 text-white font-semibold rounded-xl shadow-lg shadow-pink-500/30 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer">
                   Create a room
                 </button>
               </SignInButton>
             </SignedOut>
             <SignedIn>
               <Link to="/dashboard" className="w-full sm:w-auto">
-                <button className="w-full px-7 py-3.5 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold rounded-xl shadow-lg shadow-pink-500/30 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer">
+                <button className="w-full px-7 py-3.5 bg-pink-500 hover:bg-pink-600 text-white font-semibold rounded-xl shadow-lg shadow-pink-500/30 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer">
                   Create a room
                 </button>
               </Link>
@@ -87,7 +100,7 @@ function LandingPage() {
             </div>
           </div>
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center text-base flex-shrink-0 shadow-lg shadow-pink-500/20">
+            <div className="w-10 h-10 rounded-lg bg-pink-500 flex items-center justify-center text-base flex-shrink-0 shadow-lg shadow-pink-500/20">
               🎵
             </div>
             <div className="min-w-0">
@@ -97,7 +110,7 @@ function LandingPage() {
           </div>
           <div className="mb-3">
             <div className="w-full h-0.5 bg-white/10 rounded-full overflow-hidden">
-              <div className="h-full w-[45%] bg-gradient-to-r from-pink-500 to-purple-500 rounded-full" />
+              <div className="h-full w-[45%] bg-pink-500 rounded-full" />
             </div>
             <div className="flex justify-between text-[10px] text-slate-600 mt-1">
               <span>0:48</span><span>1:45</span>
@@ -107,7 +120,7 @@ function LandingPage() {
             <button className="text-slate-500 hover:text-white transition-colors cursor-pointer">
               <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z" /></svg>
             </button>
-            <button className="w-8 h-8 rounded-full bg-gradient-to-r from-pink-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-pink-500/25 hover:scale-110 transition-transform cursor-pointer">
+            <button className="w-8 h-8 rounded-full bg-pink-500 hover:bg-pink-600 flex items-center justify-center text-white shadow-lg shadow-pink-500/25 hover:scale-110 transition-transform cursor-pointer">
               <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" /></svg>
             </button>
             <button className="text-slate-500 hover:text-white transition-colors cursor-pointer">
@@ -117,7 +130,7 @@ function LandingPage() {
           <div className="pt-3 border-t border-white/[0.07]">
             <p className="text-[9px] text-slate-600 uppercase tracking-widest mb-1.5">Up Next</p>
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-md bg-gradient-to-br from-cyan-500 to-indigo-600 flex-shrink-0" />
+              <div className="w-6 h-6 rounded-md bg-cyan-600 flex-shrink-0" />
               <div className="min-w-0">
                 <p className="text-[11px] text-slate-300 truncate">Drops of Jupiter</p>
                 <p className="text-[10px] text-slate-500 truncate">Train</p>
@@ -169,12 +182,12 @@ function LandingPage() {
             {/* Stats 2×2 */}
             <div className="grid grid-cols-2 gap-4 sm:gap-5">
               {[
-                { value: '30', label: 'Songs per queue', color: 'from-pink-500/20 to-pink-500/5', accent: 'text-pink-400' },
-                { value: '∞', label: 'Listeners', color: 'from-purple-500/20 to-purple-500/5', accent: 'text-purple-400' },
-                { value: '0', label: 'Accounts to join', color: 'from-cyan-500/20 to-cyan-500/5', accent: 'text-cyan-400' },
-                { value: '1', label: 'Vote per song', color: 'from-indigo-500/20 to-indigo-500/5', accent: 'text-indigo-400' },
+                { value: '30', label: 'Songs per queue', color: 'bg-pink-500/10', accent: 'text-pink-400' },
+                { value: '∞', label: 'Listeners', color: 'bg-purple-500/10', accent: 'text-purple-400' },
+                { value: '0', label: 'Accounts to join', color: 'bg-cyan-500/10', accent: 'text-cyan-400' },
+                { value: '1', label: 'Vote per song', color: 'bg-indigo-500/10', accent: 'text-indigo-400' },
               ].map(({ value, label, color, accent }) => (
-                <div key={label} className={`p-5 sm:p-8 rounded-2xl bg-gradient-to-br ${color} border border-white/[0.05] hover:border-white/[0.1] transition-all`}>
+                <div key={label} className={`p-5 sm:p-8 rounded-2xl ${color} border border-white/[0.05] hover:border-white/[0.1] transition-all`}>
                   <div className={`text-4xl sm:text-5xl md:text-6xl font-extrabold ${accent} mb-2 tracking-tight`}>{value}</div>
                   <div className="text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-slate-500">{label}</div>
                 </div>
@@ -288,8 +301,8 @@ function LandingPage() {
             </div>
 
             {/* Pro */}
-            <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-b from-pink-950/30 to-purple-950/20 border-2 border-pink-500/25 flex flex-col relative shadow-2xl shadow-pink-500/5 hover:border-pink-500/40 transition-all">
-              <span className="absolute -top-3.5 right-5 sm:right-6 px-3 py-1 bg-gradient-to-r from-pink-500 to-purple-600 text-white text-[10px] font-bold uppercase tracking-widest rounded-full">
+            <div className="p-6 sm:p-8 rounded-3xl bg-pink-950/20 border-2 border-pink-500/25 flex flex-col relative shadow-2xl shadow-pink-500/5 hover:border-pink-500/40 transition-all">
+              <span className="absolute -top-3.5 right-5 sm:right-6 px-3 py-1 bg-pink-500 text-white text-[10px] font-bold uppercase tracking-widest rounded-full">
                 POPULAR
               </span>
               <h3 className="text-xl sm:text-2xl font-bold text-white mb-1">Pro</h3>
@@ -313,13 +326,13 @@ function LandingPage() {
               </ul>
               <SignedOut>
                 <SignInButton mode="modal">
-                  <button className="w-full py-3 sm:py-3.5 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold rounded-xl hover:scale-[1.02] active:scale-95 transition-all cursor-pointer shadow-lg shadow-pink-500/20 text-sm sm:text-base">
+                  <button className="w-full py-3 sm:py-3.5 bg-pink-500 hover:bg-pink-600 text-white font-semibold rounded-xl hover:scale-[1.02] active:scale-95 transition-all cursor-pointer shadow-lg shadow-pink-500/20 text-sm sm:text-base">
                     Upgrade to Pro
                   </button>
                 </SignInButton>
               </SignedOut>
               <SignedIn>
-                <button className="w-full py-3 sm:py-3.5 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold rounded-xl hover:scale-[1.02] active:scale-95 transition-all cursor-pointer shadow-lg shadow-pink-500/20 text-sm sm:text-base">
+                <button className="w-full py-3 sm:py-3.5 bg-pink-500 hover:bg-pink-600 text-white font-semibold rounded-xl hover:scale-[1.02] active:scale-95 transition-all cursor-pointer shadow-lg shadow-pink-500/20 text-sm sm:text-base">
                   Upgrade to Pro
                 </button>
               </SignedIn>
@@ -374,7 +387,7 @@ function LandingPage() {
                 <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Message</label>
                 <textarea rows={4} placeholder="Tell us what you're thinking..." className="w-full px-4 py-3 bg-white/[0.03] border border-white/[0.08] focus:border-pink-500/40 rounded-xl text-white text-sm outline-none transition-colors resize-none placeholder:text-slate-600" />
               </div>
-              <button type="submit" className="w-full py-3 sm:py-3.5 bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 text-white font-semibold rounded-xl shadow-lg shadow-pink-500/10 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer">
+              <button type="submit" className="w-full py-3 sm:py-3.5 bg-pink-500 hover:bg-pink-600 text-white font-semibold rounded-xl shadow-lg shadow-pink-500/10 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer">
                 Send Message
               </button>
             </form>
@@ -386,8 +399,8 @@ function LandingPage() {
       {/* FOOTER                                      */}
       {/* ══════════════════════════════════════════ */}
       <footer className="relative bg-black border-t border-white/[0.06] overflow-hidden">
-        {/* subtle glow top-center */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[1px] bg-gradient-to-r from-transparent via-pink-500/40 to-transparent" />
+        {/* subtle solid line border-top */}
+        <div className="absolute top-0 left-0 right-0 h-[1px] bg-white/10" />
 
         <div className="max-w-7xl mx-auto px-5 sm:px-10 md:px-16 py-14 md:py-16">
 
@@ -482,7 +495,7 @@ function LandingPage() {
                 />
                 <button
                   type="submit"
-                  className="px-3 py-2.5 bg-gradient-to-r from-pink-500 to-purple-600 text-white text-xs font-semibold rounded-lg hover:opacity-90 transition-opacity cursor-pointer flex-shrink-0"
+                  className="px-3 py-2.5 bg-pink-500 hover:bg-pink-600 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer flex-shrink-0"
                 >
                   →
                 </button>
@@ -504,13 +517,13 @@ function LandingPage() {
 
       {/* JOIN ROOM MODAL */}
       {isJoinOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-          {/* Backdrop */}
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-md flex items-start sm:items-center justify-center p-4">
+          {/* Backdrop click handler */}
           <div
             onClick={() => setIsJoinOpen(false)}
-            className="absolute inset-0 bg-black/80 backdrop-blur-md"
+            className="fixed inset-0 cursor-pointer"
           />
-          <div className="relative z-10 w-full max-w-md">
+          <div className="relative z-10 w-full max-w-md my-auto">
             <RoomJoinForm onCancel={() => setIsJoinOpen(false)} />
           </div>
         </div>

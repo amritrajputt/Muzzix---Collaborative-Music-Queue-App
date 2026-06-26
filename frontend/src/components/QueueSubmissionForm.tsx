@@ -31,7 +31,7 @@ export const QueueSubmissionForm = ({
         <button
           type="submit"
           disabled={adding || !youtubeURL}
-          className="px-5 py-3 rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white text-sm font-semibold shadow-lg shadow-pink-500/25 active:scale-95 transition-all cursor-pointer disabled:opacity-50 disabled:scale-100 flex items-center gap-2"
+          className="px-5 py-3 rounded-xl bg-pink-500 hover:bg-pink-600 text-white text-sm font-semibold shadow-lg shadow-pink-500/25 active:scale-95 transition-all cursor-pointer disabled:opacity-50 disabled:scale-100 flex items-center gap-2"
         >
           {adding ? (
             <div className="w-4.5 h-4.5 border-2 border-white border-t-transparent rounded-full animate-spin" />

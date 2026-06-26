@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import joinRoomService from '../services/joinRoomService';
+import { useToast } from '../contexts/ToastContext';
 
 interface RoomJoinFormProps {
   initialSpaceId?: string;
@@ -8,6 +9,7 @@ interface RoomJoinFormProps {
 }
 
 const RoomJoinForm = ({ initialSpaceId = '', onSuccess, onCancel }: RoomJoinFormProps) => {
+  const { showToast } = useToast();
   const [spaceId, setSpaceId] = useState(initialSpaceId);
   const [name, setName] = useState('');
   const [spacePassword, setSpacePassword] = useState('');
@@ -26,11 +28,18 @@ const RoomJoinForm = ({ initialSpaceId = '', onSuccess, onCancel }: RoomJoinForm
     try {
       const res = await joinRoomService.joinRoom(spaceId, name, spacePassword);
       if (res) {
+        const member = res.data?.space;
+        if (member?.guestName && member?.guestUuid) {
+          localStorage.setItem(`guestName_${spaceId}`, member.guestName);
+          localStorage.setItem(`guestUuid_${spaceId}`, member.guestUuid);
+        }
         if (onSuccess) {
           onSuccess(res);
         } else {
-          alert("Joined space successfully!");
-          window.location.href = `/spaces/${spaceId}`;
+          showToast("Joined space successfully!", "success");
+          setTimeout(() => {
+            window.location.href = `/spaces/${spaceId}`;
+          }, 1200);
         }
       } else {
         setError("Invalid Room ID or Password. Please try again.");
@@ -44,7 +53,7 @@ const RoomJoinForm = ({ initialSpaceId = '', onSuccess, onCancel }: RoomJoinForm
   };
 
   return (
-    <div className="w-full max-w-md mx-auto p-8 rounded-3xl bg-[#09061a]/95 border border-white/[0.08] shadow-2xl backdrop-blur-xl relative overflow-hidden group">
+    <div className="w-full max-w-md mx-auto p-5 sm:p-8 rounded-2xl sm:rounded-3xl bg-[#09061a]/95 border border-white/[0.08] shadow-2xl backdrop-blur-xl relative overflow-hidden group">
       {/* Close button if onCancel is provided */}
       {onCancel && (
         <button
@@ -62,14 +71,14 @@ const RoomJoinForm = ({ initialSpaceId = '', onSuccess, onCancel }: RoomJoinForm
       <div className="absolute -left-10 -top-10 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl pointer-events-none transition-all duration-500 group-hover:bg-purple-500/15" />
       <div className="absolute -right-10 -bottom-10 w-32 h-32 bg-pink-500/10 rounded-full blur-3xl pointer-events-none transition-all duration-500 group-hover:bg-pink-500/15" />
 
-      <div className="text-center mb-8 relative z-10">
+      <div className="text-center mb-6 sm:mb-8 relative z-10">
         <span className="text-[10px] uppercase font-bold tracking-widest px-3 py-1 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20">
           Listening Space Gate
         </span>
-        <h2 className="text-2xl font-black text-white mt-4 tracking-wide uppercase">
+        <h2 className="text-xl sm:text-2xl font-black text-white mt-3 sm:mt-4 tracking-wide uppercase">
           Join Music Room
         </h2>
-        <p className="text-xs text-slate-400 mt-2">
+        <p className="text-[11px] sm:text-xs text-slate-400 mt-1.5 sm:mt-2">
           Enter details below to sync with the room's live queue.
         </p>
       </div>
@@ -80,7 +89,7 @@ const RoomJoinForm = ({ initialSpaceId = '', onSuccess, onCancel }: RoomJoinForm
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-5 relative z-10">
+      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 relative z-10">
         <div>
           <label className="block text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-2">
             Space ID / Room ID
@@ -126,7 +135,7 @@ const RoomJoinForm = ({ initialSpaceId = '', onSuccess, onCancel }: RoomJoinForm
         <button
           type="submit"
           disabled={loading}
-          className="w-full mt-4 py-3.5 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold rounded-xl shadow-lg shadow-pink-500/20 hover:shadow-pink-500/30 active:scale-95 transition-all cursor-pointer text-sm tracking-wide uppercase flex items-center justify-center gap-2"
+          className="w-full mt-4 py-3.5 bg-pink-500 hover:bg-pink-600 text-white font-semibold rounded-xl shadow-lg shadow-pink-500/20 hover:shadow-pink-500/30 active:scale-95 transition-all cursor-pointer text-sm tracking-wide uppercase flex items-center justify-center gap-2"
         >
           {loading ? (
             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />

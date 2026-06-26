@@ -1,4 +1,6 @@
 
+import { useToast } from '../contexts/ToastContext';
+
 interface RoomInfoSidebarProps {
   spaceName: string;
   spaceId: string;
@@ -7,14 +9,16 @@ interface RoomInfoSidebarProps {
 }
 
 export const RoomInfoSidebar = ({ spaceName, spaceId, guestName, onLeave }: RoomInfoSidebarProps) => {
+  const { showToast } = useToast();
+
   const handleCopyId = () => {
     navigator.clipboard.writeText(spaceId);
-    alert('Room ID copied to clipboard!');
+    showToast('Room ID copied to clipboard!', 'success');
   };
 
   return (
     <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/[0.06] backdrop-blur-xl">
-      <h2 className="text-xl font-bold tracking-wider bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent mb-1 uppercase truncate">
+      <h2 className="text-xl font-bold tracking-wider text-pink-400 mb-1 uppercase truncate">
         {spaceName}
       </h2>
       <div className="flex items-center gap-1.5 text-xs text-slate-400 mb-6">
