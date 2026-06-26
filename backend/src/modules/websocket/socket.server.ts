@@ -8,12 +8,8 @@ export const initSocketServer = (httpServer: HttpServer): Server => {
   const ioInstance = new Server(httpServer, {
     cors: {
       origin: (origin, callback) => {
-        // Allow all localhost origins during development, otherwise specific origins
-        if (!origin || /^http:\/\/localhost(:\d+)?$/.test(origin)) {
-          callback(null, true);
-        } else {
-          callback(null, ["http://localhost:5173", "http://localhost:3001"]);
-        }
+        // Allow all origins to enable local network testing and localtunnels
+        callback(null, true);
       },
       credentials: true
     },

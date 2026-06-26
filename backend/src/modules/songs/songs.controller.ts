@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express"
+import { getAuth } from "@clerk/express"
 import ApiResponse from "../../common/responses/ApiResponse.js"
 import ApiError from "../../common/errors/ApiError.js"
 import songService from "./songs.service.js"
@@ -15,7 +16,16 @@ class songController {
             if (!spaceId) {
                 throw ApiError.badRequest("spaceId is required")
             }
-            const song = await songService.addSong(spaceId, guestUuid, youtubeURL)
+
+            let clerkUserId: string | null = null
+            try {
+                const { userId } = getAuth(req)
+                clerkUserId = userId || null
+            } catch (err) {
+                // Ignore auth error for unauthenticated guests
+            }
+
+            const song = await songService.addSong(spaceId, guestUuid, youtubeURL, clerkUserId)
             const response = ApiResponse.created(201, song, "Song added successfully")
             return res.status(response.statusCode).json(response)
         } catch (error) {

@@ -4,10 +4,13 @@ import { RedisSortedSet } from "../redis/redis.sortedSet.js"
 import { RedisRateLimitAndVotes } from "../redis/redis.rateLimitAndVotes.js" 
 import { emitToRoom } from "../redis/redis.pubsub.js"
 import { NowPlayingService } from "../nowPlaying/nowPlaying.service.js"
+import db from "../../db/index.js"
+import { spaces, users } from "../../db/schema.js"
+import { eq } from "drizzle-orm"
 
 class SongService {
 
-    static async addSong(spaceId: string, guestUuid: string, youtubeURL: string) {
+    static async addSong(spaceId: string, guestUuid: string, youtubeURL: string, clerkUserId?: string | null) {
         try {
            if (!isValidYoutubeLink(youtubeURL)) {
              throw ApiError.badRequest("Invalid youtube URL")
@@ -16,6 +19,21 @@ class SongService {
            const videoId = extractVideoId(youtubeURL)
            if (!videoId) {
              throw ApiError.badRequest("Invalid youtube URL")
+           }
+
+           // Check if space exists and determine if the user is the creator
+           const spaceResult = await db.select().from(spaces).where(eq(spaces.id, spaceId)).limit(1)
+           if (spaceResult.length === 0) {
+             throw ApiError.notFound("Space not found")
+           }
+           const space = spaceResult[0]
+
+           let isCreator = false
+           if (clerkUserId) {
+             const userResult = await db.select().from(users).where(eq(users.clerkId, clerkUserId)).limit(1)
+             if (userResult.length > 0 && space.userId === userResult[0].id) {
+               isCreator = true
+             }
            }
 
            const queueSize = await RedisSortedSet.queueSize(spaceId)
@@ -29,9 +47,11 @@ class SongService {
              throw ApiError.badRequest("Song is already in the queue")
            }
 
-           const isUnderLimit = await RedisRateLimitAndVotes.isUnderRateLimit(spaceId, guestUuid, 3)
-           if (!isUnderLimit) {
-             throw ApiError.badRequest("Rate limit exceeded")
+           if (!isCreator) {
+             const isUnderLimit = await RedisRateLimitAndVotes.isUnderRateLimit(spaceId, guestUuid, 3)
+             if (!isUnderLimit) {
+               throw ApiError.badRequest("Rate limit exceeded")
+             }
            }
 
            let title = ""

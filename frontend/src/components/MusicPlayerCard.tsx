@@ -31,6 +31,22 @@ export const MusicPlayerCard = ({
         <div id="youtube-player-element" ref={onPlayerContainerMount} className="w-full h-full" />
         {/* Transparent overlay to block direct clicks/interactions on the YouTube iframe */}
         <div className="absolute inset-0 z-10 bg-transparent cursor-default" />
+        {/* Autoplay / Click to Play Overlay */}
+        {nowPlaying?.isPlaying && !isPlaying && (
+          <div
+            className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/75 backdrop-blur-[4px] cursor-pointer hover:bg-black/85 transition-all duration-300"
+            onClick={onPlayPause}
+          >
+            <div className="w-12 h-12 rounded-full bg-pink-500 hover:bg-pink-600 flex items-center justify-center text-white shadow-lg shadow-pink-500/35 hover:scale-110 active:scale-95 transition-all duration-200 mb-2">
+              <svg className="w-6 h-6 translate-x-[1px]" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </div>
+            <span className="text-[10px] text-pink-400 font-bold uppercase tracking-widest px-2.5 animate-pulse font-sans">
+              Click to Sync Audio
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Song Metadata */}

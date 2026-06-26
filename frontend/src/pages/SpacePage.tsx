@@ -5,7 +5,7 @@ import RoomJoinForm from '../components/RoomJoinForm';
 import createRoomService from '../services/createRoomService';
 import songService from '../services/songService';
 import api from '../services/api';
-import { useSpaceSocket } from '../hooks/useSpaceSocket';
+import { useSpaceSocket, getServerTime } from '../hooks/useSpaceSocket';
 import RoomInfoSidebar from '../components/RoomInfoSidebar';
 import QueueSubmissionForm from '../components/QueueSubmissionForm';
 import QueueList from '../components/QueueList';
@@ -116,7 +116,7 @@ export function SpacePage({ spaceId }: SpacePageProps) {
     const isPaused = nowPlayingRef.current.isPlaying === false;
     const elapsedSeconds = isPaused
       ? (nowPlayingRef.current.pausedAt || 0)
-      : (Date.now() - nowPlayingRef.current.startedAt) / 1000;
+      : (getServerTime() - nowPlayingRef.current.startedAt) / 1000;
     const totalDuration = nowPlayingRef.current.duration || (player.getDuration ? player.getDuration() : 0);
     
     if (!isPaused && totalDuration > 0 && elapsedSeconds >= totalDuration) {
@@ -168,7 +168,7 @@ export function SpacePage({ spaceId }: SpacePageProps) {
       const isPaused = currentSong.isPlaying === false;
       const elapsedSeconds = isPaused
         ? (currentSong.pausedAt || 0)
-        : (currentSong.startedAt ? (Date.now() - currentSong.startedAt) / 1000 : 0);
+        : (currentSong.startedAt ? (getServerTime() - currentSong.startedAt) / 1000 : 0);
       const startSec = elapsedSeconds > 0 ? Math.floor(elapsedSeconds) : 0;
 
       console.log('[YT Player Debug] Instantiating window.YT.Player with videoId:', currentSong.songId, 'startSec:', startSec);
@@ -290,7 +290,7 @@ export function SpacePage({ spaceId }: SpacePageProps) {
         const isPaused = nowPlaying.isPlaying === false;
         const elapsedSeconds = isPaused
           ? (nowPlaying.pausedAt || 0)
-          : (nowPlaying.startedAt ? (Date.now() - nowPlaying.startedAt) / 1000 : 0);
+          : (nowPlaying.startedAt ? (getServerTime() - nowPlaying.startedAt) / 1000 : 0);
         const startSecs = elapsedSeconds > 0 ? Math.floor(elapsedSeconds) : 0;
         console.log('[YT Player Debug] Loading video via loadVideoById:', nowPlaying.songId, 'start:', startSecs);
         playerRef.current.loadVideoById({
@@ -310,6 +310,29 @@ export function SpacePage({ spaceId }: SpacePageProps) {
       initYoutubePlayer();
     }
   }, [nowPlaying?.songId, nowPlaying?.startedAt, nowPlaying?.isPlaying, nowPlaying?.pausedAt]);
+
+  // Autoplay recovery on user interaction
+  useEffect(() => {
+    const handleUserInteraction = () => {
+      if (playerRef.current && nowPlaying?.isPlaying && !isPlaying) {
+        console.log('[Autoplay Recovery] User interacted with the page, resuming video.');
+        try {
+          if (typeof playerRef.current.playVideo === 'function') {
+            playerRef.current.playVideo();
+          }
+        } catch (e) {
+          console.error('[Autoplay Recovery] Failed to resume video:', e);
+        }
+      }
+    };
+
+    window.addEventListener('click', handleUserInteraction);
+    window.addEventListener('keydown', handleUserInteraction);
+    return () => {
+      window.removeEventListener('click', handleUserInteraction);
+      window.removeEventListener('keydown', handleUserInteraction);
+    };
+  }, [nowPlaying, isPlaying]);
 
   // Poll current time, duration and isPlaying state from player instance
   useEffect(() => {
@@ -430,7 +453,7 @@ export function SpacePage({ spaceId }: SpacePageProps) {
       const isServerPaused = nowPlaying?.isPlaying === false;
       const expectedServerTime = isServerPaused
         ? (nowPlaying?.pausedAt || 0)
-        : (nowPlaying?.startedAt ? (Date.now() - nowPlaying.startedAt) / 1000 : 0);
+        : (nowPlaying?.startedAt ? (getServerTime() - nowPlaying.startedAt) / 1000 : 0);
 
       const currentTimeVal = playerRef.current.getCurrentTime() || 0;
 

@@ -1,5 +1,13 @@
 import { useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { getBackendUrl } from '../services/api';
+
+// Cache the offset: serverTime - clientTime
+let serverTimeOffset = 0;
+
+export const getServerTime = (): number => {
+  return Date.now() + serverTimeOffset;
+};
 
 interface UseSpaceSocketCallbacks {
   onQueueUpdated: (queue: any[]) => void;
@@ -24,9 +32,30 @@ export function useSpaceSocket(
   useEffect(() => {
     if (!spaceId || !guestUuid || !guestName) return;
 
-    const socketUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+    const socketUrl = getBackendUrl();
     const socket = io(socketUrl);
     socketRef.current = socket;
+
+    // Handle time sync
+    const requestTimeSync = () => {
+      socket.emit('ping-server-time', { clientSentAt: Date.now() });
+    };
+
+    socket.on('connect', requestTimeSync);
+    
+    // If already connected
+    if (socket.connected) {
+      requestTimeSync();
+    }
+
+    socket.on('pong-server-time', (data: { clientSentAt: number; serverTime: number }) => {
+      const clientReceivedAt = Date.now();
+      const rtt = clientReceivedAt - data.clientSentAt;
+      const oneWayDelay = rtt / 2;
+      const estimatedServerTimeAtReceive = data.serverTime + oneWayDelay;
+      serverTimeOffset = estimatedServerTimeAtReceive - clientReceivedAt;
+      console.log(`[Time Sync] RTT: ${rtt}ms, Clock Offset set to: ${serverTimeOffset}ms`);
+    });
 
     // Join the space room in WS
     socket.emit('join-space', { spaceId, guestName, guestUuid });

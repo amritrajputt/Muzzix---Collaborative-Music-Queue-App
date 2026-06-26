@@ -49,6 +49,13 @@ export const registerSocketEvents = (socket: Socket, io: Server) => {
     }
   })
 
+  socket.on("ping-server-time", ({ clientSentAt }: { clientSentAt: number }) => {
+    socket.emit("pong-server-time", {
+      clientSentAt,
+      serverTime: Date.now()
+    })
+  })
+
   socket.on("disconnect", () => {
     const { spaceId, guestName, guestUuid } = socket.data
     if (spaceId) {
