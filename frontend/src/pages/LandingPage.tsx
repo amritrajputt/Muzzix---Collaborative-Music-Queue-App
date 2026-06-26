@@ -99,24 +99,26 @@ function LandingPage() {
               <div className="w-[3px] bg-pink-400 rounded-sm now-playing-bar-5" style={{ height: '12px' }} />
             </div>
           </div>
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-lg bg-pink-500 flex items-center justify-center text-base flex-shrink-0 shadow-lg shadow-pink-500/20">
-              🎵
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs font-semibold text-white truncate">Stay (feat. Justin Bieber)</p>
-              <p className="text-[10px] text-slate-400 truncate">The Kid LAROI, Justin Bieber</p>
+          <div className="flex items-center gap-3 mb-4 font-sans text-left">
+            <img 
+              src="/millionaire.jpg" 
+              alt="Yo Yo Honey Singh" 
+              className="w-10 h-10 rounded-lg object-cover shadow-lg shadow-pink-500/20 border border-white/10 flex-shrink-0" 
+            />
+            <div className="min-w-0 text-left font-sans">
+              <p className="text-xs font-semibold text-white truncate">Millionaire</p>
+              <p className="text-[10px] text-slate-400 truncate">Yo Yo Honey Singh</p>
             </div>
           </div>
           <div className="mb-3">
-            <div className="w-full h-0.5 bg-white/10 rounded-full overflow-hidden">
+            <div className="w-full h-0.5 bg-white/10 rounded-full overflow-hidden font-sans">
               <div className="h-full w-[45%] bg-pink-500 rounded-full" />
             </div>
-            <div className="flex justify-between text-[10px] text-slate-600 mt-1">
+            <div className="flex justify-between text-[10px] text-slate-600 mt-1 font-mono">
               <span>0:48</span><span>1:45</span>
             </div>
           </div>
-          <div className="flex items-center justify-center gap-5 mb-3">
+          <div className="flex items-center justify-center gap-5 mb-3 font-sans">
             <button className="text-slate-500 hover:text-white transition-colors cursor-pointer">
               <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z" /></svg>
             </button>
@@ -127,15 +129,19 @@ function LandingPage() {
               <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zm2-8.14 4.77 3.36-4.77 3.36V9.86zM18 6h-2v12h2z" /></svg>
             </button>
           </div>
-          <div className="pt-3 border-t border-white/[0.07]">
-            <p className="text-[9px] text-slate-600 uppercase tracking-widest mb-1.5">Up Next</p>
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-md bg-cyan-600 flex-shrink-0" />
-              <div className="min-w-0">
-                <p className="text-[11px] text-slate-300 truncate">Drops of Jupiter</p>
-                <p className="text-[10px] text-slate-500 truncate">Train</p>
+          <div className="pt-3 border-t border-white/[0.07] font-sans">
+            <p className="text-[9px] text-slate-600 uppercase tracking-widest mb-1.5 font-mono">Up Next</p>
+            <div className="flex items-center gap-2 font-sans">
+              <img 
+                src="/millionaire.jpg" 
+                alt="Yo Yo Honey Singh" 
+                className="w-6 h-6 rounded-md object-cover border border-white/5 flex-shrink-0" 
+              />
+              <div className="min-w-0 text-left font-sans">
+                <p className="text-[11px] text-slate-300 truncate">Bonita</p>
+                <p className="text-[10px] text-slate-500 truncate">Yo Yo Honey Singh</p>
               </div>
-              <span className="ml-auto text-[10px] font-bold text-pink-400">↑ 12</span>
+              <span className="ml-auto text-[10px] font-bold text-pink-400 font-mono">↑ 12</span>
             </div>
           </div>
         </div>
