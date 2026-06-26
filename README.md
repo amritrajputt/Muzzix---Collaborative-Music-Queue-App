@@ -1,46 +1,88 @@
 # 🎵 Muzzix — Collaborative Music Queue App
 
-Muzzix is a real-time collaborative music room app where a host creates a private space, shares the Room ID and password, and everyone inside can search for songs, add them to a shared queue, and vote on what plays next. The queue automatically reorders based on votes, and every participant sees updates instantly — no refresh needed.
+A high-performance, real-time collaborative music room application. Hosts create secure, private spaces, and participants join as authenticated users or temporary guests to search, queue, and vote on tracks in real time. The play queue automatically re-ranks dynamically, and playback is synchronized across all clients without manual page refresh.
 
 ---
 
-## ✨ Features
+## 🏗️ System Architecture & Data Flow
 
-- 🔐 **Creator authentication** via Clerk — secure sign up and login, no password handling on our end
-- 👥 **Guest access** — members join with just a Room ID, guest name, and password, no account required
-- 🔍 **Song search** powered by the YouTube Data API
-- 🗳️ **Real-time voting** — upvote or downvote songs, queue reorders live for everyone
-- 🚫 **Abuse protection** — queue size limits and per-user rate limiting prevent spam
-- 📡 **Live sync** across all connected users via WebSockets
-- 💎 **Free & Pro plans** — limits on room count and queue size
+```mermaid
+flowchart TD
+    Client[React Frontend / YT Iframe API] <-->|Socket.IO Events| WS[Node.js WebSocket Server]
+    ClientClient[Guest / Host Client] -->|HTTPS REST| API[Express API Server]
+    API -->|Auth Verification| Clerk[Clerk Auth Services]
+    API <-->|Drizzle ORM| DB[(PostgreSQL Database)]
+    API <-->|Queue / Rate Limits| Redis[(Redis Key-Value Cache)]
+    WS <-->|Pub/Sub Sync| Redis
+    DB <-->|Sync State| Redis
+```
 
----
-
-## 🏗️ Tech Stack
-
-| Layer | Technology |
-|---|---|
-| Frontend | React (Vite) + TypeScript + Tailwind CSS + Shadcn UI |
-| Backend | Node.js + Express + TypeScript |
-| Database | PostgreSQL + Drizzle ORM |
-| Cache / Real-time store | Redis |
-| Real-time transport | Socket.IO (WebSockets) |
-| Auth | Clerk |
-| Containerization | Docker (PostgreSQL + Redis) |
+Muzzix splits its data engine between **PostgreSQL** (durability for users, plan limits, spaces metadata, and members) and **Redis** (ephemeral real-time queues, concurrent rate limits, active playback states, and pub/sub room synchronizations).
 
 ---
 
-## 🧠 Architecture Highlights
+## 🧠 Core Engineering Challenges & Solutions
 
-**Modular backend** — every feature (auth, spaces, songs, votes, websocket, redis) lives in its own self-contained module with its own routes, controller, service, and types, keeping the codebase easy to navigate and extend.
+### 1. Latency-Compensated Playback Synchronization (The Clock Skew Problem)
+**The Problem:** In a collaborative room, a host plays a song. Listeners must start hearing the track at the exact same play frame. If a client's system clock is out of sync with the server's clock, calculating the elapsed progress dynamically leads to timing drift, resulting in audio skips or desynchronization.
+**The Solution:**
+- **Deterministic Server-Side Playback State:** The server maintains an active playback state hash in Redis:
+  ```json
+  {
+    "songId": "dQw4w9WgXcQ",
+    "isPlaying": true,
+    "startedAt": 1719416400000,
+    "pausedAt": 45.2
+  }
+  ```
+- **Precision RTT Synchronization:** Upon establishing a WebSocket connection, the client initiates a handshake to calculate the clock offset ($O$) relative to the server:
+  $$\text{RTT} = t_{\text{receive}} - t_{\text{send}}$$
+  $$\text{Offset} = t_{\text{server}} - \left(t_{\text{receive}} - \frac{\text{RTT}}{2}\right)$$
+- **Elapsed Time Correction:** When rendering the track progress, the client adjusts its local clock skew:
+  - If `isPlaying` is false, elapsed = `pausedAt`.
+  - If `isPlaying` is true, elapsed = $\frac{(\text{Date.now()} + \text{Offset}) - \text{startedAt}}{1000}$.
+- **Threshold-Based Seeking:** The client compares the local player timestamp ($t_{\text{local}}$) to the server timestamp ($t_{\text{server}}$). If the absolute drift $|t_{\text{local}} - t_{\text{server}}| > 2.5\text{s}$, the client triggers `player.seekTo(t_server, true)`. Otherwise, it suppresses seeking to prevent network audio stutter.
 
-**Hybrid storage strategy** — permanent data (users, rooms, play history) lives in PostgreSQL, while fast-changing real-time data (live vote counts, song queue order, rate limits) lives in Redis using Sorted Sets and Hashes for instant reads and writes.
+### 2. Dynamic Priority Queue & Tie-Breakers (Redis Sorted Sets)
+**The Problem:** Songs must be ordered dynamically by vote counts. If two songs have the exact same number of votes, the song that was submitted first must take priority.
+**The Solution:**
+- We store the queue in a Redis Sorted Set (`ZSET`) using the key `space:${spaceId}:queue`.
+- To encode both vote count and insertion order into a single numeric score ($S$) for `ZADD`, we use a composite weight formula:
+  $$S = \text{votes} + \left(1 - \frac{\text{timestamp}}{10^{13}}\right)$$
+  - This ensures that a higher vote count always dominates.
+  - For identical vote counts, the division of the Unix epoch timestamp makes older submissions receive a slightly higher score weight, naturally preserving insertion order priority.
 
-**Atomic vote counting** — votes are updated using Redis's atomic operations, preventing race conditions when multiple users vote on the same song simultaneously.
+### 3. Concurrency Protection in Multi-User Upvoting
+**The Problem:** If 100 users hit "upvote" on the same song at the same microsecond, standard database write queries cause lock contention, deadlocks, or dirty reads.
+**The Solution:**
+- Upvote requests bypass PostgreSQL entirely and hit Redis.
+- We issue atomic transactions:
+  ```bash
+  MULTI
+  SADD space:${spaceId}:song:${songId}:voters ${guestUuid}
+  ZINCRBY space:${spaceId}:queue 1 ${songId}
+  EXEC
+  ```
+- If the voter's UUID is already present in the set, the transaction is rejected, preventing double-voting. The database is synchronized asynchronously via a throttled batch-write queue.
 
-**Multi-server ready** — Redis Pub/Sub keeps WebSocket events in sync across multiple backend server instances, so the app can scale horizontally without users missing real-time updates.
+### 4. Interactive Browser Autoplay Recovery
+**The Problem:** Modern browsers enforce strict autoplay policies that block media playback on page load/refresh unless the user has first interacted with the document.
+**The Solution:**
+- **Autoplay State Detection:** If the server state is active (`isPlaying: true`) but the iframe player transitions to `PAUSED` immediately on page load, the app detects an autoplay block.
+- **Glass Play Shield:** The app renders a blurred glass overlay stating "Click to Sync Audio" over the player and registers document-wide `click` and `keydown` event listeners.
+- **Immediate Playback Recovery:** The moment the user clicks anywhere on the document, the listeners capture the interaction, call `player.playVideo()`, sync the play frame, and remove the global event listeners.
 
-**Secure room access** — room passwords are hashed before storage and never returned in API responses after creation; guest identity for rate limiting is tracked per session.
+---
+
+## 🛠️ Tech Stack
+
+- **Frontend:** React 19 + Vite + TypeScript + Tailwind CSS + Radix UI (Shadcn UI)
+- **Routing & State:** TanStack Router + React Context API
+- **Backend:** Node.js + Express + TypeScript
+- **Database Access:** PostgreSQL + Drizzle ORM (SQL Schema compilations & migrations)
+- **In-Memory Store:** Redis v7 (Sorted Sets, Sets, Hashes, Pub/Sub channels)
+- **Real-time Protocol:** Socket.IO v4 (WebSockets with polling fallback)
+- **Authentication:** Clerk Express SDK (JWT authentication middleware)
 
 ---
 
@@ -50,81 +92,132 @@ Muzzix is a real-time collaborative music room app where a host creates a privat
 backend/
   src/
     modules/
-      auth/        → user registration, profile, Clerk webhook sync
-      spaces/       → create, join, delete music rooms
-      songs/        → search and queue management
-      votes/         → upvote / downvote logic
-      websocket/      → Socket.IO server and event handlers
-      redis/           → Redis client, pub/sub, sorted sets
+      auth/        → User session controls, Clerk API profiles
+      spaces/      → Music room creation, joining, and configuration
+      songs/       → Search, queue additions, metadata fetching
+      votes/       → Upvote/downvote operations
+      websocket/   → Socket.IO event registrations and room handlers
+      redis/       → Redis connection pooling, pub/sub, sorted sets
     db/
-      schema.ts         → Drizzle ORM schema
-      migrations/
+      schema.ts    → Drizzle ORM database definitions
+      migrations/  → Generated SQL schemas
     common/
-      middleware/         → auth guard, error handler
-      errors/
-    config/
-    app.ts
-    index.ts
+      middleware/  → Auth checks, error capture, guest resolution
+      errors/      → Custom ApiError hierarchies
+    app.ts         → Express configurations & CORS definitions
+    index.ts       → Server initialization & Socket.IO mounting
 
 frontend/
   src/
-    pages/        → Landing, Dashboard, Join, Room, Upgrade
-    components/    → Queue card, Vote button, Search, Now Playing
-    hooks/          → useSocket, useRoom, useQueue
-    services/        → API calls
+    pages/         → LandingPage, DashboardPage, SpacePage
+    components/    → LeaderBoard, RoomInfoSidebar, QueueSubmissionForm, QueueList, MusicPlayerCard
+    hooks/         → useSpaceSocket
+    services/      → API services (api, songService, createRoomService, joinRoomService)
 ```
 
 ---
 
-## ⚙️ Getting Started
+## 💾 Database Schema Spec (Drizzle ORM)
 
-### Prerequisites
-- Node.js 20+
-- pnpm
-- Docker Desktop
-- A Clerk account (for authentication)
+```typescript
+export const planTypeEnum = pgEnum("plan_type", ["free", "pro"])
 
-### Setup
+// Users table (Synchronized with Clerk)
+export const users = pgTable("users", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  clerkId: varchar("clerk_id", { length: 255 }).notNull().unique(),
+  name: varchar("name", { length: 255 }).notNull(),
+  email: varchar("email", { length: 255 }).notNull().unique(),
+  spaceCount: integer("space_count").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+})
 
+// Spaces (Rooms) table
+export const spaces = pgTable("spaces", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  spaceName: varchar("space_name", { length: 255 }).notNull(),
+  spacePassword: varchar("space_password", { length: 255 }).notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  maxSongs: integer("max_songs").default(30).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+})
+
+// Space members table (Guests)
+export const spaceMembers = pgTable("space_members", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  spaceId: uuid("space_id").notNull().references(() => spaces.id, { onDelete: "cascade" }),
+  guestUuid: varchar("guest_uuid", { length: 255 }).notNull(),
+  guestName: varchar("guest_name", { length: 255 }).notNull(),
+  joinedAt: timestamp("joined_at").defaultNow().notNull(),
+})
+```
+
+---
+
+## 📡 WebSocket Event Specifications
+
+| Event Name | Direction | Payload Schema | Description |
+|---|---|---|---|
+| `join-space` | Client $\rightarrow$ Server | `{ spaceId: string, guestName: string, guestUuid: string }` | Joins a room, triggers member-joined broadcast. |
+| `leave-space` | Client $\rightarrow$ Server | `{ spaceId: string, guestName: string, guestUuid: string }` | Exits a room, triggers member-left broadcast. |
+| `ping-server-time` | Client $\rightarrow$ Server | `{ clientSentAt: number }` | Measures connection latency and returns server time. |
+| `pong-server-time` | Server $\rightarrow$ Client | `{ clientSentAt: number, serverTime: number }` | Response payload containing timestamps for skew sync. |
+| `report-duration` | Client $\rightarrow$ Server | `{ spaceId: string, songId: string, duration: number }` | Informs the server of the track's length. |
+| `song-ended` | Client $\rightarrow$ Server | `{ spaceId: string, songId: string }` | Fired when current track ends to trigger queue advance. |
+| `queueUpdated` | Server $\rightarrow$ Client | `{ queue: Song[] }` | Broadcast when tracks are added, upvoted, or skipped. |
+| `nowPlayingChanged` | Server $\rightarrow$ Client | `{ song: PlaybackState \| null }` | Broadcast on song change or playback sync updates. |
+| `playback-state-changed` | Server $\leftrightarrow$ Client | `{ isPlaying: boolean, currentTime: number }` | Broadcasts global play/pause toggle triggers. |
+
+---
+
+## ⚙️ Setup & Installation
+
+### 1. Prerequisites
+- **Node.js (v20+)**
+- **pnpm**
+- **Docker Desktop**
+- **Clerk Account** (for authentication keys)
+
+### 2. Infrastructure Setup (Docker Compose)
+Start the database and caching layer in the background:
 ```bash
-# Clone the repo
-git clone https://github.com/your-username/muzix.git
-cd muzix
-
-# Start PostgreSQL and Redis
 docker-compose up -d
+```
 
-# Install backend dependencies
+### 3. Backend Environment Config
+Create a `backend/.env` file:
+```env
+PORT=3000
+DATABASE_URL=postgresql://postgres:postgres@localhost:5435/muzix_db
+REDIS_URL=redis://localhost:6380
+CLERK_SECRET_KEY=sk_test_...
+YOUTUBE_API_KEY=AIzaSy...
+```
+
+Run database migrations and start the backend:
+```bash
 cd backend
 pnpm install
-
-# Set up environment variables
-cp .env.example .env
-# fill in DATABASE_URL, REDIS_URL, CLERK_SECRET_KEY, CLERK_WEBHOOK_SECRET
-
-# Run migrations
 pnpm db:generate
 pnpm db:migrate
-
-# Start the backend
 pnpm dev
 ```
 
+### 4. Frontend Environment Config
+Create a `frontend/.env` file:
+```env
+VITE_CLERK_PUBLISHABLE_KEY=pk_test_...
+VITE_BACKEND_URL=http://localhost:3000
+```
+
+Start the Vite development server:
 ```bash
-# In a separate terminal — frontend
-cd frontend
+cd ../frontend
 pnpm install
 pnpm dev
 ```
-
----
-
-## 🗺️ Roadmap
-
-- [ ] Stripe integration for Pro plan upgrades
-- [ ] Skip-song voting
-- [ ] Room chat
-- [ ] Mobile app
 
 ---
 
