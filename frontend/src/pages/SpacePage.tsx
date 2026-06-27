@@ -696,6 +696,7 @@ export function SpacePage({ spaceId }: SpacePageProps) {
           <QueueList
             queue={queue}
             guestUuid={guestUuid}
+            guestName={guestName}
             upvotingIds={upvotingIds}
             votedSongIds={votedSongIds}
             onUpvote={handleUpvote}
