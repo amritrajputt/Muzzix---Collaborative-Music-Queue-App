@@ -171,3 +171,18 @@ pnpm dev
 ## 📄 License
 
 MIT
+   
+
+
+
+
+
+
+
+
+
+   postgresql://neondb_owner:npg_N8OpWoRncXP9@ep-round-tree-aolvap7a-pooler.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+
+
+
+   REDIS_URL="rediss://default:gQAAAAAAAdQHAAIgcDJmYmE5ODk0M2JiY2U0MGYzYmJjZDYxYTIzNTNhMzk1ZA@delicate-caiman-119815.upstash.io:6379"
