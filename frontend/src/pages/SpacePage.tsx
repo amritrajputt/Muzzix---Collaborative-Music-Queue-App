@@ -145,6 +145,18 @@ export function SpacePage({ spaceId }: SpacePageProps) {
       player.pauseVideo();
     } else {
       player.playVideo();
+      // Fallback for autoplay block: if player fails to start unmuted within 150ms, play muted.
+      setTimeout(() => {
+        try {
+          if (player.getPlayerState && player.getPlayerState() !== window.YT.PlayerState.PLAYING) {
+            console.log('[Autoplay] Unmuted playback blocked. Retrying muted...');
+            player.mute();
+            player.playVideo();
+          }
+        } catch (err) {
+          console.error('[Autoplay Check Error]', err);
+        }
+      }, 150);
     }
   };
 
@@ -307,6 +319,18 @@ export function SpacePage({ spaceId }: SpacePageProps) {
           playerRef.current.pauseVideo();
         } else {
           playerRef.current.playVideo();
+          const p = playerRef.current;
+          setTimeout(() => {
+            try {
+              if (p.getPlayerState && p.getPlayerState() !== window.YT.PlayerState.PLAYING) {
+                console.log('[Autoplay] Unmuted playback blocked on song change. Retrying muted...');
+                p.mute();
+                p.playVideo();
+              }
+            } catch (err) {
+              console.error('[Autoplay Check Error]', err);
+            }
+          }, 150);
         }
       } else {
         console.warn('[YT Player Debug] playerRef.current exists but loadVideoById is not a function');
@@ -317,17 +341,23 @@ export function SpacePage({ spaceId }: SpacePageProps) {
     }
   }, [nowPlaying?.songId, nowPlaying?.startedAt, nowPlaying?.isPlaying, nowPlaying?.pausedAt]);
 
-  // Autoplay recovery on user interaction
+  // Autoplay recovery and auto-unmute on user interaction
   useEffect(() => {
     const handleUserInteraction = () => {
-      if (playerRef.current && nowPlaying?.isPlaying && !isPlaying) {
-        console.log('[Autoplay Recovery] User interacted with the page, resuming video.');
+      if (playerRef.current) {
         try {
-          if (typeof playerRef.current.playVideo === 'function') {
-            playerRef.current.playVideo();
+          if (typeof playerRef.current.isMuted === 'function' && playerRef.current.isMuted()) {
+            playerRef.current.unMute();
+            console.log('[Autoplay Recovery] User interacted, unmuting player.');
+          }
+          if (nowPlaying?.isPlaying && !isPlaying) {
+            if (typeof playerRef.current.playVideo === 'function') {
+              playerRef.current.playVideo();
+              console.log('[Autoplay Recovery] User interacted, resuming video.');
+            }
           }
         } catch (e) {
-          console.error('[Autoplay Recovery] Failed to resume video:', e);
+          console.error('[Autoplay Recovery] Failed during interaction:', e);
         }
       }
     };

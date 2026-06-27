@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from '@tanstack/react-router'
 import joinRoomService from '../services/joinRoomService';
 import { useToast } from '../contexts/ToastContext';
 
@@ -9,6 +10,7 @@ interface RoomJoinFormProps {
 }
 
 const RoomJoinForm = ({ initialSpaceId = '', onSuccess, onCancel }: RoomJoinFormProps) => {
+  const navigate = useNavigate();
   const { showToast } = useToast();
   const [spaceId, setSpaceId] = useState(initialSpaceId);
   const [name, setName] = useState('');
@@ -37,9 +39,7 @@ const RoomJoinForm = ({ initialSpaceId = '', onSuccess, onCancel }: RoomJoinForm
           onSuccess(res);
         } else {
           showToast("Joined space successfully!", "success");
-          setTimeout(() => {
-            window.location.href = `/spaces/${spaceId}`;
-          }, 1200);
+          navigate({ to: `/spaces/${spaceId}` });
         }
       } else {
         setError("Invalid Room ID or Password. Please try again.");
