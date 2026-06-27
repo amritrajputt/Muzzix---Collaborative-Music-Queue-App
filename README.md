@@ -117,60 +117,7 @@ frontend/
 
 ---
 
-## 💾 Database Schema Spec (Drizzle ORM)
 
-```typescript
-export const planTypeEnum = pgEnum("plan_type", ["free", "pro"])
-
-// Users table (Synchronized with Clerk)
-export const users = pgTable("users", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  clerkId: varchar("clerk_id", { length: 255 }).notNull().unique(),
-  name: varchar("name", { length: 255 }).notNull(),
-  email: varchar("email", { length: 255 }).notNull().unique(),
-  spaceCount: integer("space_count").default(0).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-})
-
-// Spaces (Rooms) table
-export const spaces = pgTable("spaces", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  spaceName: varchar("space_name", { length: 255 }).notNull(),
-  spacePassword: varchar("space_password", { length: 255 }).notNull(),
-  isActive: boolean("is_active").default(true).notNull(),
-  maxSongs: integer("max_songs").default(30).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-})
-
-// Space members table (Guests)
-export const spaceMembers = pgTable("space_members", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  spaceId: uuid("space_id").notNull().references(() => spaces.id, { onDelete: "cascade" }),
-  guestUuid: varchar("guest_uuid", { length: 255 }).notNull(),
-  guestName: varchar("guest_name", { length: 255 }).notNull(),
-  joinedAt: timestamp("joined_at").defaultNow().notNull(),
-})
-```
-
----
-
-## 📡 WebSocket Event Specifications
-
-| Event Name | Direction | Payload Schema | Description |
-|---|---|---|---|
-| `join-space` | Client $\rightarrow$ Server | `{ spaceId: string, guestName: string, guestUuid: string }` | Joins a room, triggers member-joined broadcast. |
-| `leave-space` | Client $\rightarrow$ Server | `{ spaceId: string, guestName: string, guestUuid: string }` | Exits a room, triggers member-left broadcast. |
-| `ping-server-time` | Client $\rightarrow$ Server | `{ clientSentAt: number }` | Measures connection latency and returns server time. |
-| `pong-server-time` | Server $\rightarrow$ Client | `{ clientSentAt: number, serverTime: number }` | Response payload containing timestamps for skew sync. |
-| `report-duration` | Client $\rightarrow$ Server | `{ spaceId: string, songId: string, duration: number }` | Informs the server of the track's length. |
-| `song-ended` | Client $\rightarrow$ Server | `{ spaceId: string, songId: string }` | Fired when current track ends to trigger queue advance. |
-| `queueUpdated` | Server $\rightarrow$ Client | `{ queue: Song[] }` | Broadcast when tracks are added, upvoted, or skipped. |
-| `nowPlayingChanged` | Server $\rightarrow$ Client | `{ song: PlaybackState \| null }` | Broadcast on song change or playback sync updates. |
-| `playback-state-changed` | Server $\leftrightarrow$ Client | `{ isPlaying: boolean, currentTime: number }` | Broadcasts global play/pause toggle triggers. |
-
----
 
 ## ⚙️ Setup & Installation
 
