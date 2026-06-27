@@ -13,6 +13,13 @@ export const registerSocketEvents = (socket: Socket, io: Server) => {
     socket.data.spaceId = spaceId
     socket.data.guestName = guestName
     socket.data.guestUuid = guestUuid
+    
+    try {
+      await RedisSortedSet.saveMemberName(spaceId, guestUuid, guestName)
+    } catch (err) {
+      console.error("Error saving member name mapping on join:", err)
+    }
+
     emitToRoom("member-joined", { guestName, guestUuid }, spaceId)
 
     try {

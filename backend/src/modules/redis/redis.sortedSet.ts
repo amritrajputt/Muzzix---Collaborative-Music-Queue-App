@@ -136,18 +136,34 @@ export class RedisSortedSet extends RedisBase {
     await this.client.del(key)
   }
 
+  static async saveMemberName(spaceId: string, guestUuid: string, guestName: string) {
+    await this.connect()
+    const key = `members:${spaceId}`
+    await this.client.hSet(key, guestUuid, guestName)
+  }
+
   static async getMergedQueue(spaceId: string) {
     const queueItems = await this.getFullQueue(spaceId)
     const mergedQueue = []
+    const membersKey = `members:${spaceId}`
     for (const item of queueItems) {
       const metadata = await this.getSongMetadata(spaceId, item.value)
+      const guestUuid = metadata?.addedBy || ''
+      
+      let displayName = guestUuid
+      if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(guestUuid)) {
+        await this.connect()
+        const name = await this.client.hGet(membersKey, guestUuid)
+        displayName = name || "Guest"
+      }
+
       mergedQueue.push({
         songId: item.value,
         votes: item.score,
         title: metadata?.title || '',
         url: metadata?.url || '',
         thumbnail: metadata?.thumbnail || '',
-        addedBy: metadata?.addedBy || '',
+        addedBy: displayName,
         duration: metadata?.duration
       })
     }

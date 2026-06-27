@@ -10,7 +10,7 @@ import { eq } from "drizzle-orm"
 
 class SongService {
 
-  static async addSong(spaceId: string, guestUuid: string, guestName: string, youtubeURL: string, clerkUserId?: string | null) {
+  static async addSong(spaceId: string, guestUuid: string, youtubeURL: string, clerkUserId?: string | null) {
     try {
       if (!isValidYoutubeLink(youtubeURL)) {
         throw ApiError.badRequest("Invalid youtube URL")
