@@ -29,6 +29,7 @@ export function useYoutubePlayer({
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [isPlayerReady, setIsPlayerReady] = useState(false);
 
   const playerRef = useRef<any>(null);
   const hasInteractedRef = useRef(false);
@@ -156,6 +157,7 @@ export function useYoutubePlayer({
         events: {
           onReady: (event: any) => {
             console.log('[YT Player Debug] onReady fired');
+            setIsPlayerReady(true);
             const durationVal = event.target.getDuration();
             const currentSongId = nowPlayingRef.current?.songId;
             if (durationVal && currentSongId) {
@@ -234,6 +236,7 @@ export function useYoutubePlayer({
         }
         playerRef.current = null;
       }
+      setIsPlayerReady(false);
     };
   }, []);
 
@@ -242,9 +245,10 @@ export function useYoutubePlayer({
     console.log('[YT Player Debug] Sync player on song changes effect running', {
       songId: nowPlaying?.songId,
       hasPlayerRef: !!playerRef.current,
+      isPlayerReady,
       hasLoadVideo: !!(playerRef.current && typeof playerRef.current.loadVideoById === 'function')
     });
-    if (playerRef.current && nowPlaying?.songId) {
+    if (playerRef.current && isPlayerReady && nowPlaying?.songId) {
       if (typeof playerRef.current.loadVideoById === 'function') {
         const isPaused = nowPlaying.isPlaying === false;
         const elapsedSeconds = isPaused
@@ -297,15 +301,15 @@ export function useYoutubePlayer({
       } else {
         console.warn('[YT Player Debug] playerRef.current exists but loadVideoById is not a function');
       }
-    } else if (nowPlaying?.songId && window.YT && window.YT.Player) {
+    } else if (nowPlaying?.songId && window.YT && window.YT.Player && !playerRef.current) {
       console.log('[YT Player Debug] Call initYoutubePlayer from song changes effect');
       initYoutubePlayer();
     }
-  }, [nowPlaying?.songId]);
+  }, [nowPlaying?.songId, isPlayerReady]);
 
   // Sync play/pause and seek position on state updates
   useEffect(() => {
-    if (!playerRef.current || !nowPlaying?.songId) return;
+    if (!playerRef.current || !isPlayerReady || !nowPlaying?.songId) return;
 
     // Verify the correct video is loaded before syncing play/pause state
     let currentVideoId = "";
@@ -340,7 +344,7 @@ export function useYoutubePlayer({
     } catch (err) {
       console.error('[YT Player Debug] Error syncing on metadata change:', err);
     }
-  }, [nowPlaying?.startedAt, nowPlaying?.isPlaying, nowPlaying?.pausedAt, timeSynced]);
+  }, [nowPlaying?.startedAt, nowPlaying?.isPlaying, nowPlaying?.pausedAt, timeSynced, isPlayerReady]);
 
   // Autoplay recovery and auto-unmute on user interaction
   useEffect(() => {
