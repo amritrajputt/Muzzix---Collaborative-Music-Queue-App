@@ -144,6 +144,7 @@ export function useYoutubePlayer({
       playerRef.current = new window.YT.Player('youtube-player-element', {
         height: '100%',
         width: '100%',
+        host: 'https://www.youtube-nocookie.com',
         videoId: currentSong.songId,
         playerVars: {
           autoplay: isPaused ? 0 : 1,
@@ -151,6 +152,7 @@ export function useYoutubePlayer({
           modestbranding: 1,
           rel: 0,
           start: startSec,
+          origin: window.location.origin,
         },
         events: {
           onReady: (event: any) => {
