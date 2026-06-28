@@ -39,6 +39,7 @@ export function SpacePage({ spaceId }: SpacePageProps) {
     getLeaderboardData,
     reportSongEnded,
     reportDuration,
+    timeSynced,
   } = useSpaceRoom(spaceId);
 
   const {
@@ -51,6 +52,7 @@ export function SpacePage({ spaceId }: SpacePageProps) {
     nowPlaying,
     isHost,
     socketRef,
+    timeSynced,
     onSongEnded: reportSongEnded,
     onReportDuration: reportDuration,
   });

@@ -13,6 +13,7 @@ interface UseSpaceSocketCallbacks {
   onQueueUpdated: (queue: any[]) => void;
   onNowPlayingChanged: (song: any) => void;
   onPlaybackStateChanged: (data: { isPlaying: boolean; currentTime: number }) => void;
+  onTimeSynced?: () => void;
 }
 
 export function useSpaceSocket(
@@ -55,6 +56,9 @@ export function useSpaceSocket(
       const estimatedServerTimeAtReceive = data.serverTime + oneWayDelay;
       serverTimeOffset = estimatedServerTimeAtReceive - clientReceivedAt;
       console.log(`[Time Sync] RTT: ${rtt}ms, Clock Offset set to: ${serverTimeOffset}ms`);
+      if (callbacksRef.current.onTimeSynced) {
+        callbacksRef.current.onTimeSynced();
+      }
     });
 
     // Join the space room in WS

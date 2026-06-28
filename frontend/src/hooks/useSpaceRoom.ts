@@ -47,6 +47,7 @@ export function useSpaceRoom(spaceId: string) {
   const [dbUser, setDbUser] = useState<any>(null);
   const [hostId, setHostId] = useState<string | null>(null);
   const [creatorName, setCreatorName] = useState<string | null>(null);
+  const [timeSynced, setTimeSynced] = useState(false);
 
   // Sync voted songs in localStorage when queue changes
   const updateQueueAndVotes = (newQueue: Song[]) => {
@@ -118,6 +119,9 @@ export function useSpaceRoom(spaceId: string) {
     },
     onPlaybackStateChanged: () => {
       // Handled inside useYoutubePlayer by listening to socket directly
+    },
+    onTimeSynced: () => {
+      setTimeSynced(true);
     },
   });
 
@@ -294,5 +298,6 @@ export function useSpaceRoom(spaceId: string) {
     getLeaderboardData,
     reportSongEnded,
     reportDuration,
+    timeSynced,
   };
 }

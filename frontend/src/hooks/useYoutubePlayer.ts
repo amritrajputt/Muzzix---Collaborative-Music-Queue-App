@@ -13,6 +13,7 @@ interface UseYoutubePlayerProps {
   nowPlaying: any;
   isHost: boolean;
   socketRef: React.MutableRefObject<Socket | null>;
+  timeSynced: boolean;
   onSongEnded: (songId: string) => void;
   onReportDuration: (songId: string, duration: number) => void;
 }
@@ -21,6 +22,7 @@ export function useYoutubePlayer({
   nowPlaying,
   isHost,
   socketRef,
+  timeSynced,
   onSongEnded,
   onReportDuration,
 }: UseYoutubePlayerProps) {
@@ -337,7 +339,7 @@ export function useYoutubePlayer({
     } catch (err) {
       console.error('[YT Player Debug] Error syncing on metadata change:', err);
     }
-  }, [nowPlaying?.startedAt, nowPlaying?.isPlaying, nowPlaying?.pausedAt]);
+  }, [nowPlaying?.startedAt, nowPlaying?.isPlaying, nowPlaying?.pausedAt, timeSynced]);
 
   // Autoplay recovery and auto-unmute on user interaction
   useEffect(() => {
