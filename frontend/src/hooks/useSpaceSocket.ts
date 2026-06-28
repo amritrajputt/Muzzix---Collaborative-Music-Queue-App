@@ -55,7 +55,6 @@ export function useSpaceSocket(
       const oneWayDelay = rtt / 2;
       const estimatedServerTimeAtReceive = data.serverTime + oneWayDelay;
       serverTimeOffset = estimatedServerTimeAtReceive - clientReceivedAt;
-      console.log(`[Time Sync] RTT: ${rtt}ms, Clock Offset set to: ${serverTimeOffset}ms`);
       if (callbacksRef.current.onTimeSynced) {
         callbacksRef.current.onTimeSynced();
       }

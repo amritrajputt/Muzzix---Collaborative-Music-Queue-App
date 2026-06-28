@@ -6,7 +6,6 @@ import { NowPlayingService } from "../nowPlaying/nowPlaying.service.js"
 import { RedisSortedSet } from "../redis/redis.sortedSet.js"
 
 export const registerSocketEvents = (socket: Socket, io: Server) => {
-  console.log("a user connected via socket:", socket.id)
 
   socket.on("join-space", async ({ spaceId, guestName, guestUuid }: JoinSpacePayload) => {
     socket.join(spaceId)
@@ -68,6 +67,5 @@ export const registerSocketEvents = (socket: Socket, io: Server) => {
     if (spaceId) {
       emitToRoom("member-left", { guestName, guestUuid }, spaceId)
     }
-    console.log("user disconnected:", socket.id)
   })
 }

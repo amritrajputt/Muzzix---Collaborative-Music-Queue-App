@@ -26,7 +26,6 @@ export function SpacePage({ spaceId }: SpacePageProps) {
     votedSongIds,
     isHost,
     creatorName,
-    socketRef,
     handleJoinSuccess,
     handleJoinFallback,
     handleLeave,
@@ -45,7 +44,6 @@ export function SpacePage({ spaceId }: SpacePageProps) {
   } = useYoutubePlayer({
     nowPlaying,
     isHost,
-    socketRef,
     timeSynced,
     onSongEnded: reportSongEnded,
     onReportDuration: reportDuration,
