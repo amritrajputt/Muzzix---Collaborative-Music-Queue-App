@@ -36,24 +36,12 @@ export const idempotency = async (req: Request, res: Response, next: NextFunctio
 
     // Override res.json to capture and cache the response when completed
     const originalJson = res.json;
+    
     res.json = function (body: any) {
-      // Restore original res.json to avoid infinite recursion
       res.json = originalJson;
 
-      // Cache the response status and body in Redis (expires in 1 hour)
-      redisClient.set(
-        redisResponseKey,
-        JSON.stringify({ statusCode: res.statusCode, body }),
-        "EX",
-        3600
-      ).catch((err) => {
-        console.error("Failed to cache idempotent response:", err);
-      });
-
-      // Release the lock
-      redisClient.del(redisLockKey).catch((err) => {
-        console.error("Failed to release idempotency lock:", err);
-      });
+      redisClient.set(redisResponseKey, JSON.stringify({ statusCode: res.statusCode, body }), "EX", 3600).catch(() => {});
+      redisClient.del(redisLockKey).catch(() => {});
 
       return originalJson.call(this, body);
     };
