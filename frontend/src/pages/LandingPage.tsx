@@ -320,9 +320,10 @@ function LandingPage() {
             <div className="sm:col-span-2 lg:col-span-1">
               <button
                 onClick={() => scrollTo('home')}
-                className="text-xl font-black tracking-[0.12em] uppercase text-white border-0 bg-transparent cursor-pointer hover:opacity-70 transition-opacity p-0 mb-4 block"
+                className="flex items-center gap-2 text-xl font-black tracking-[0.12em] uppercase text-white border-0 bg-transparent cursor-pointer hover:opacity-70 transition-opacity p-0 mb-4"
               >
-                MUZZIX
+                <img src="/favicon.svg" alt="Muzzix Logo" className="h-6 w-auto object-contain" />
+                <span>MUZZIX</span>
               </button>
               <p className="text-slate-500 text-sm leading-relaxed font-light max-w-xs">
                 The collaborative music queue — where everyone in the room gets a vote on what plays next.

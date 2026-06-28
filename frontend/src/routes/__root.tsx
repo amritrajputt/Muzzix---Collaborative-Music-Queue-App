@@ -39,9 +39,10 @@ function Header() {
               window.history.pushState(null, '', '/')
             }
           }}
-          className="text-base md:text-lg font-black tracking-[0.12em] uppercase text-white border-0 bg-transparent cursor-pointer hover:opacity-70 transition-opacity p-0 no-underline"
+          className="flex items-center gap-2 text-base md:text-lg font-black tracking-[0.12em] uppercase text-white border-0 bg-transparent cursor-pointer hover:opacity-70 transition-opacity p-0 no-underline"
         >
-          MUZZIX
+          <img src="/favicon.svg" alt="Muzzix Logo" className="h-6 w-auto object-contain" />
+          <span>MUZZIX</span>
         </Link>
 
         <nav className="hidden md:flex items-center gap-8">
