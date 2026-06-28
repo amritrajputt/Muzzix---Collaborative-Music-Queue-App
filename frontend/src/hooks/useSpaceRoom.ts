@@ -93,10 +93,12 @@ export function useSpaceRoom(spaceId: string) {
         setCreatorName(roomRes.data.space.creatorName || null);
       }
 
-      // 2. Fetch songs queue
-      const songsRes = await songService.getSpaceSongs(spaceId);
-      if (songsRes && songsRes.success && songsRes.data?.songs) {
-        updateQueueAndVotes(songsRes.data.songs);
+      // 2. Fetch songs queue (only if guestUuid is set)
+      if (guestUuid) {
+        const songsRes = await songService.getSpaceSongs(spaceId);
+        if (songsRes && songsRes.success && songsRes.data?.songs) {
+          updateQueueAndVotes(songsRes.data.songs);
+        }
       }
     } catch (err) {
       console.error('Error fetching room details:', err);
@@ -104,10 +106,21 @@ export function useSpaceRoom(spaceId: string) {
   };
 
   useEffect(() => {
-    if (guestUuid) {
-      fetchRoomData();
-    }
+    fetchRoomData();
   }, [spaceId, guestUuid]);
+
+  // Auto-login Host/Creator to bypass nickname/password entry dialog
+  useEffect(() => {
+    if (dbUser && hostId && dbUser.id === hostId && !guestUuid) {
+      const hostName = creatorName || dbUser.name || `${dbUser.firstName || ''} ${dbUser.lastName || ''}`.trim() || 'Host';
+      const hostUuid = dbUser.id;
+      
+      localStorage.setItem(`guestName_${spaceId}`, hostName);
+      localStorage.setItem(`guestUuid_${spaceId}`, hostUuid);
+      setGuestName(hostName);
+      setGuestUuid(hostUuid);
+    }
+  }, [dbUser, hostId, spaceId, guestUuid, creatorName]);
 
   // Connect socket
   const socketRef = useSpaceSocket(spaceId, guestUuid, guestName, {
