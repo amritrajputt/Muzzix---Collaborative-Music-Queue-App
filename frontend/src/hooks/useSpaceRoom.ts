@@ -225,18 +225,6 @@ export function useSpaceRoom(spaceId: string) {
     }
   };
 
-  const handleSkip = async () => {
-    if (!isHost) return;
-    try {
-      const res = await api.post(`/spaces/${spaceId}/next`);
-      if (res.data && res.data.success) {
-        fetchRoomData();
-      }
-    } catch (err) {
-      console.error('Failed to skip song:', err);
-      showToast('Failed to skip song. Only the host is allowed to skip.', 'error');
-    }
-  };
 
   const handleForceRefresh = (playLocalCallback?: () => void) => {
     fetchRoomData();
@@ -307,7 +295,6 @@ export function useSpaceRoom(spaceId: string) {
     handleLeave,
     handleAddSong,
     handleUpvote,
-    handleSkip,
     handleForceRefresh,
     getLeaderboardData,
     reportSongEnded,

@@ -7,8 +7,6 @@ import QueueSubmissionForm from '../components/QueueSubmissionForm';
 import QueueList from '../components/QueueList';
 import MusicPlayerCard from '../components/MusicPlayerCard';
 import bgVideo from '../assets/171912-846103594.mp4';
-import api from '../services/api';
-import { getServerTime } from '../hooks/useSpaceSocket';
 
 interface SpacePageProps {
   spaceId: string;
@@ -34,8 +32,6 @@ export function SpacePage({ spaceId }: SpacePageProps) {
     handleLeave,
     handleAddSong,
     handleUpvote,
-    handleSkip,
-    handleForceRefresh,
     getLeaderboardData,
     reportSongEnded,
     reportDuration,
@@ -43,11 +39,9 @@ export function SpacePage({ spaceId }: SpacePageProps) {
   } = useSpaceRoom(spaceId);
 
   const {
-    isPlaying,
     currentTime,
     duration,
     onPlayerContainerMount,
-    playerRef,
   } = useYoutubePlayer({
     nowPlaying,
     isHost,
@@ -63,59 +57,6 @@ export function SpacePage({ spaceId }: SpacePageProps) {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  // Toggle play/pause (creator pauses globally, listeners pause locally)
-  const handlePlayPause = async () => {
-    if (!playerRef.current) return;
-    try {
-      const state = playerRef.current.getPlayerState();
-      const nextIsPlaying = (state !== window.YT.PlayerState.PLAYING);
-
-      const isServerPaused = nowPlaying?.isPlaying === false;
-      const expectedServerTime = isServerPaused
-        ? (nowPlaying?.pausedAt || 0)
-        : (nowPlaying?.startedAt ? (getServerTime() - nowPlaying.startedAt) / 1000 : 0);
-
-      const currentTimeVal = playerRef.current.getCurrentTime() || 0;
-
-      // Optimistically update local player state for responsiveness
-      if (nextIsPlaying) {
-        if (!isHost) {
-          playerRef.current.seekTo(expectedServerTime, true);
-        }
-        playerRef.current.playVideo();
-      } else {
-        playerRef.current.pauseVideo();
-      }
-
-      // Only host triggers global synchronization
-      if (isHost) {
-        if (nextIsPlaying && !isServerPaused) {
-          playerRef.current.seekTo(expectedServerTime, true);
-          return;
-        }
-
-        await api.post(`/spaces/${spaceId}/playback`, {
-          isPlaying: nextIsPlaying,
-          currentTime: nextIsPlaying ? expectedServerTime : currentTimeVal
-        });
-      }
-    } catch (e) {
-      console.error('Error toggling play/pause:', e);
-    }
-  };
-
-  const handleForceSync = () => {
-    handleForceRefresh(() => {
-      if (playerRef.current && typeof playerRef.current.playVideo === 'function') {
-        try {
-          playerRef.current.playVideo();
-        } catch (e) {
-          console.error('Error starting player during force sync:', e);
-        }
-      }
-    });
   };
 
   // Render Join Form overlay if guest credentials do not exist
@@ -210,14 +151,9 @@ export function SpacePage({ spaceId }: SpacePageProps) {
           </div>
           <MusicPlayerCard
             nowPlaying={nowPlaying}
-            isPlaying={isPlaying}
             currentTime={currentTime}
             duration={duration}
             formatTime={formatTime}
-            onPlayPause={handlePlayPause}
-            onSkip={handleSkip}
-            onForceRefresh={handleForceSync}
-            isHost={isHost}
             onPlayerContainerMount={onPlayerContainerMount}
           />
         </div>

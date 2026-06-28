@@ -65,13 +65,10 @@ export function useYoutubePlayer({
 // Sync playback position to server's startedAt
   const syncPlaybackWithServer = (player: any) => {
     if (!nowPlayingRef.current || !nowPlayingRef.current.startedAt) return;
-    const isPaused = nowPlayingRef.current.isPlaying === false;
-    const elapsedSeconds = isPaused
-      ? (nowPlayingRef.current.pausedAt || 0)
-      : (getServerTime() - nowPlayingRef.current.startedAt) / 1000;
+    const elapsedSeconds = (getServerTime() - nowPlayingRef.current.startedAt) / 1000;
     const totalDuration = nowPlayingRef.current.duration || (player.getDuration ? player.getDuration() : 0);
 
-    if (isHostRef.current && !isPaused && totalDuration > 0 && elapsedSeconds >= totalDuration) {
+    if (isHostRef.current && totalDuration > 0 && elapsedSeconds >= totalDuration) {
       console.log('[YT Player Debug] Elapsed time exceeds duration, emitting song-ended');
       const currentSongId = nowPlayingRef.current?.songId;
       if (currentSongId) {
@@ -84,31 +81,27 @@ export function useYoutubePlayer({
       player.seekTo(elapsedSeconds, true);
     }
 
-    if (isPaused) {
-      player.pauseVideo();
-    } else {
-      if (hasUserInteracted() && typeof player.unMute === 'function') {
+    if (hasUserInteracted() && typeof player.unMute === 'function') {
+      try {
+        player.unMute();
+      } catch (err) {}
+    }
+
+    player.playVideo();
+
+    if (!hasUserInteracted()) {
+      setTimeout(() => {
         try {
-          player.unMute();
-        } catch (err) {}
-      }
-
-      player.playVideo();
-
-      if (!hasUserInteracted()) {
-        setTimeout(() => {
-          try {
-            const state = player.getPlayerState ? player.getPlayerState() : -1;
-            if (state !== window.YT.PlayerState.PLAYING && state !== window.YT.PlayerState.BUFFERING) {
-              console.log('[Autoplay] Unmuted playback blocked. Retrying muted...');
-              player.mute();
-              player.playVideo();
-            }
-          } catch (err) {
-            console.error('[Autoplay Check Error]', err);
+          const state = player.getPlayerState ? player.getPlayerState() : -1;
+          if (state !== window.YT.PlayerState.PLAYING && state !== window.YT.PlayerState.BUFFERING) {
+            console.log('[Autoplay] Unmuted playback blocked. Retrying muted...');
+            player.mute();
+            player.playVideo();
           }
-        }, 1000);
-      }
+        } catch (err) {
+          console.error('[Autoplay Check Error]', err);
+        }
+      }, 1000);
     }
   };
 
@@ -135,10 +128,7 @@ export function useYoutubePlayer({
     }
 
     try {
-      const isPaused = currentSong.isPlaying === false;
-      const elapsedSeconds = isPaused
-        ? (currentSong.pausedAt || 0)
-        : (currentSong.startedAt ? (getServerTime() - currentSong.startedAt) / 1000 : 0);
+      const elapsedSeconds = currentSong.startedAt ? (getServerTime() - currentSong.startedAt) / 1000 : 0;
       const startSec = elapsedSeconds > 0 ? Math.floor(elapsedSeconds) : 0;
 
       console.log('[YT Player Debug] Instantiating window.YT.Player with videoId:', currentSong.songId, 'startSec:', startSec);
@@ -147,7 +137,7 @@ export function useYoutubePlayer({
         width: '100%',
         videoId: currentSong.songId,
         playerVars: {
-          autoplay: isPaused ? 0 : 1,
+          autoplay: 1,
           controls: 0,
           modestbranding: 1,
           rel: 0,
@@ -249,10 +239,7 @@ export function useYoutubePlayer({
     });
     if (playerRef.current && isPlayerReady && nowPlaying?.songId) {
       if (typeof playerRef.current.loadVideoById === 'function') {
-        const isPaused = nowPlaying.isPlaying === false;
-        const elapsedSeconds = isPaused
-          ? (nowPlaying.pausedAt || 0)
-          : (nowPlaying.startedAt ? (getServerTime() - nowPlaying.startedAt) / 1000 : 0);
+        const elapsedSeconds = nowPlaying.startedAt ? (getServerTime() - nowPlaying.startedAt) / 1000 : 0;
         const startSecs = elapsedSeconds > 0 ? Math.floor(elapsedSeconds) : 0;
 
         // Get currently loaded video ID if possible to prevent reloading the same video
@@ -269,32 +256,29 @@ export function useYoutubePlayer({
             videoId: nowPlaying.songId,
             startSeconds: startSecs
           });
-          if (isPaused) {
-            playerRef.current.pauseVideo();
-          } else {
-            if (hasUserInteracted() && typeof playerRef.current.unMute === 'function') {
+          
+          if (hasUserInteracted() && typeof playerRef.current.unMute === 'function') {
+            try {
+              playerRef.current.unMute();
+            } catch (err) {}
+          }
+
+          playerRef.current.playVideo();
+
+          if (!hasUserInteracted()) {
+            const p = playerRef.current;
+            setTimeout(() => {
               try {
-                playerRef.current.unMute();
-              } catch (err) {}
-            }
-
-            playerRef.current.playVideo();
-
-            if (!hasUserInteracted()) {
-              const p = playerRef.current;
-              setTimeout(() => {
-                try {
-                  const state = p.getPlayerState ? p.getPlayerState() : -1;
-                  if (state !== window.YT.PlayerState.PLAYING && state !== window.YT.PlayerState.BUFFERING) {
-                    console.log('[Autoplay] Unmuted playback blocked on song change. Retrying muted...');
-                    p.mute();
-                    p.playVideo();
-                  }
-                } catch (err) {
-                  console.error('[Autoplay Check Error]', err);
+                const state = p.getPlayerState ? p.getPlayerState() : -1;
+                if (state !== window.YT.PlayerState.PLAYING && state !== window.YT.PlayerState.BUFFERING) {
+                  console.log('[Autoplay] Unmuted playback blocked on song change. Retrying muted...');
+                  p.mute();
+                  p.playVideo();
                 }
-              }, 1000);
-            }
+              } catch (err) {
+                console.error('[Autoplay Check Error]', err);
+              }
+            }, 1000);
           }
         }
       } else {
@@ -320,20 +304,13 @@ export function useYoutubePlayer({
 
     if (currentVideoId !== nowPlaying.songId) return;
 
-    const isPaused = nowPlaying.isPlaying === false;
-    const elapsedSeconds = isPaused
-      ? (nowPlaying.pausedAt || 0)
-      : (nowPlaying.startedAt ? (getServerTime() - nowPlaying.startedAt) / 1000 : 0);
+    const elapsedSeconds = nowPlaying.startedAt ? (getServerTime() - nowPlaying.startedAt) / 1000 : 0;
 
     try {
-      if (isPaused) {
-        playerRef.current.pauseVideo();
-      } else {
-        if (hasUserInteracted() && typeof playerRef.current.unMute === 'function') {
-          playerRef.current.unMute();
-        }
-        playerRef.current.playVideo();
+      if (hasUserInteracted() && typeof playerRef.current.unMute === 'function') {
+        playerRef.current.unMute();
       }
+      playerRef.current.playVideo();
 
       // Sync seeking if drift is significant
       const currentLoc = playerRef.current.getCurrentTime() || 0;
@@ -343,7 +320,7 @@ export function useYoutubePlayer({
     } catch (err) {
       console.error('[YT Player Debug] Error syncing on metadata change:', err);
     }
-  }, [nowPlaying?.startedAt, nowPlaying?.isPlaying, nowPlaying?.pausedAt, timeSynced, isPlayerReady]);
+  }, [nowPlaying?.startedAt, timeSynced, isPlayerReady]);
 
   // Autoplay recovery and auto-unmute on user interaction
   useEffect(() => {
@@ -355,11 +332,9 @@ export function useYoutubePlayer({
             playerRef.current.unMute();
             console.log('[Autoplay Recovery] User interacted, unmuting player.');
           }
-          if (nowPlaying?.isPlaying && !isPlaying) {
-            if (typeof playerRef.current.playVideo === 'function') {
-              playerRef.current.playVideo();
-              console.log('[Autoplay Recovery] User interacted, resuming video.');
-            }
+          if (typeof playerRef.current.playVideo === 'function') {
+            playerRef.current.playVideo();
+            console.log('[Autoplay Recovery] User interacted, resuming video.');
           }
         } catch (e) {
           console.error('[Autoplay Recovery] Failed during interaction:', e);
