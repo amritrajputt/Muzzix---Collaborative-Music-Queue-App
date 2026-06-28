@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@clerk/clerk-react';
+import { useNavigate } from '@tanstack/react-router';
 import createRoomService from '../services/createRoomService';
 import songService from '../services/songService';
 import api from '../services/api';
@@ -21,6 +22,7 @@ export interface LeaderMember {
 }
 
 export function useSpaceRoom(spaceId: string) {
+  const navigate = useNavigate();
   const { showToast } = useToast();
   const { isSignedIn } = useAuth();
 
@@ -170,6 +172,7 @@ export function useSpaceRoom(spaceId: string) {
     localStorage.removeItem(`guestUuid_${spaceId}`);
     setGuestName(null);
     setGuestUuid(null);
+    navigate({ to: '/dashboard' });
   };
 
   const handleAddSong = async (e: React.FormEvent) => {
