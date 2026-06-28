@@ -88,58 +88,5 @@ class SpaceController {
             next(err);
         }
     }
-
-    static async skipSong(req: Request, res: Response, next: NextFunction) {
-        try {
-            const { spaceId } = req.params;
-            const dbUserId = req.dbUser.id;
-
-            const space = await SpaceService.getSpaceById(spaceId);
-            if (space.userId !== dbUserId) {
-                throw ApiError.forbidden("Only the space creator can skip songs");
-            }
-
-            await NowPlayingService.advanceToNextSong(spaceId);
-            const response = ApiResponse.success(200, {}, "Song skipped successfully");
-            return res.status(response.statusCode).json(response);
-        } catch (err) {
-            next(err);
-        }
-    }
-
-    static async controlPlayback(req: Request, res: Response, next: NextFunction) {
-        try {
-            const { spaceId } = req.params;
-            const { isPlaying, currentTime } = req.body;
-            const dbUserId = req.dbUser.id;
-
-            const space = await SpaceService.getSpaceById(spaceId);
-            if (space.userId !== dbUserId) {
-                throw ApiError.forbidden("Only the space creator can control playback");
-            }
-
-            // Update playback state in Redis nowPlaying hash
-            const nowPlaying = await RedisSortedSet.getNowPlaying(spaceId);
-            if (nowPlaying) {
-                nowPlaying.isPlaying = isPlaying;
-                if (!isPlaying) {
-                    nowPlaying.pausedAt = currentTime;
-                } else {
-                    nowPlaying.startedAt = Date.now() - (currentTime * 1000);
-                    nowPlaying.pausedAt = undefined;
-                }
-                await RedisSortedSet.setNowPlaying(spaceId, nowPlaying);
-                
-                // Broadcast updated nowPlaying metadata to all clients
-                emitToRoom("nowPlayingChanged", { song: nowPlaying }, spaceId);
-            }
-
-            emitToRoom("playback-state-changed", { isPlaying, currentTime }, spaceId);
-            const response = ApiResponse.success(200, { isPlaying, currentTime }, "Playback state changed successfully");
-            return res.status(response.statusCode).json(response);
-        } catch (err) {
-            next(err);
-        }
-    }
 }
 export default SpaceController
