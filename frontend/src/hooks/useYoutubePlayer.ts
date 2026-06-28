@@ -152,7 +152,6 @@ export function useYoutubePlayer({
           modestbranding: 1,
           rel: 0,
           start: startSec,
-          origin: window.location.origin,
         },
         events: {
           onReady: (event: any) => {
