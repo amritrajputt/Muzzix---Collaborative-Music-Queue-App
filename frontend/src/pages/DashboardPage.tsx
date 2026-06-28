@@ -22,7 +22,9 @@ export function DashboardPage() {
     handleCopy,
     handleCreateSpaceSubmit,
     handleDeleteSpaceSubmit,
-  } = useDashboard();
+  } = useDashboard((spaceId) => {
+    navigate({ to: `/spaces/${spaceId}` });
+  });
 
   return (
     <div className="min-h-screen bg-[#030014] text-white pt-24 pb-16 px-4 sm:px-6 lg:px-8 relative overflow-x-hidden">

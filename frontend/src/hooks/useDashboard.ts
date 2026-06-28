@@ -3,7 +3,7 @@ import createRoomService from '../services/createRoomService';
 import { useToast } from '../contexts/ToastContext';
 import type { Space } from '../components/dashboard/SpaceCard';
 
-export function useDashboard() {
+export function useDashboard(onCreated?: (spaceId: string) => void) {
   const { showToast } = useToast();
   const [spaces, setSpaces] = useState<Space[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,12 +56,24 @@ export function useDashboard() {
     const idempotencyKey = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15);
     try {
       const res = await createRoomService.createRoom(spaceName, spacePassword, idempotencyKey);
-      if (res && res.success) {
+      if (res && res.success && res.data?.space) {
         setIsCreateOpen(false);
         setSpaceName('');
         setSpacePassword('');
         showToast('Space created successfully!', 'success');
-        fetchSpaces();
+
+        // Pre-authenticate the host inside localStorage to bypass Join Room dialog
+        const spaceId = res.data.space.id;
+        const hostName = res.data.space.creatorName || 'Host';
+        const hostUuid = res.data.space.userId;
+        localStorage.setItem(`guestName_${spaceId}`, hostName);
+        localStorage.setItem(`guestUuid_${spaceId}`, hostUuid);
+
+        if (onCreated) {
+          onCreated(spaceId);
+        } else {
+          fetchSpaces();
+        }
       } else {
         showToast(res?.message || 'Failed to create space. Please try again.', 'error');
       }
