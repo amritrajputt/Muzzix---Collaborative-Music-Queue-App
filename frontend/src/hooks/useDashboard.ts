@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import createRoomService from '../services/createRoomService';
 import { useToast } from '../contexts/ToastContext';
 import type { Space } from '../components/dashboard/SpaceCard';
@@ -8,12 +8,24 @@ export function useDashboard(onCreated?: (spaceId: string) => void) {
   const [spaces, setSpaces] = useState<Space[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   // Form states
   const [spaceName, setSpaceName] = useState('');
   const [spacePassword, setSpacePassword] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // Generate a single idempotency key when the modal is opened
+  const idempotencyKeyRef = useRef<string>('');
+
+  useEffect(() => {
+    if (isCreateOpen) {
+      idempotencyKeyRef.current = typeof crypto !== 'undefined' && crypto.randomUUID 
+        ? crypto.randomUUID() 
+        : Math.random().toString(36).substring(2, 15);
+    }
+  }, [isCreateOpen]);
 
   const fetchSpaces = async () => {
     setLoading(true);
@@ -51,11 +63,11 @@ export function useDashboard(onCreated?: (spaceId: string) => void) {
 
   const handleCreateSpaceSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!spaceName.trim() || !spacePassword.trim()) return;
+    if (!spaceName.trim() || !spacePassword.trim() || creating) return;
 
-    const idempotencyKey = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15);
+    setCreating(true);
     try {
-      const res = await createRoomService.createRoom(spaceName, spacePassword, idempotencyKey);
+      const res = await createRoomService.createRoom(spaceName, spacePassword, idempotencyKeyRef.current);
       if (res && res.success && res.data?.space) {
         setIsCreateOpen(false);
         setSpaceName('');
@@ -80,6 +92,8 @@ export function useDashboard(onCreated?: (spaceId: string) => void) {
     } catch (error) {
       console.error('Error creating space:', error);
       showToast('Failed to create space.', 'error');
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -106,6 +120,7 @@ export function useDashboard(onCreated?: (spaceId: string) => void) {
     loading,
     isCreateOpen,
     setIsCreateOpen,
+    isCreating: creating,
     deleteConfirmId,
     setDeleteConfirmId,
     spaceName,

@@ -12,6 +12,7 @@ export function DashboardPage() {
     loading,
     isCreateOpen,
     setIsCreateOpen,
+    isCreating,
     deleteConfirmId,
     setDeleteConfirmId,
     spaceName,
@@ -120,6 +121,7 @@ export function DashboardPage() {
         setSpaceName={setSpaceName}
         spacePassword={spacePassword}
         setSpacePassword={setSpacePassword}
+        isCreating={isCreating}
       />
 
       {/* DELETE CONFIRMATION MODAL */}
