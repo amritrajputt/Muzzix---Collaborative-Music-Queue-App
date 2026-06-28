@@ -111,7 +111,7 @@ const RoomJoinForm = ({ initialSpaceId = '', onSuccess, onCancel }: RoomJoinForm
           <input
             type="text"
             required
-            placeholder="e.g. DJ DiscoCat 🐱"
+            placeholder="Enter room name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="w-full px-4 py-3 text-sm rounded-xl bg-white/[0.04] border border-white/[0.08] focus:border-purple-500/80 focus:bg-white/[0.07] outline-none text-white transition-all placeholder-slate-600 focus:shadow-[0_0_15px_rgba(168,85,247,0.15)]"
@@ -148,4 +148,4 @@ const RoomJoinForm = ({ initialSpaceId = '', onSuccess, onCancel }: RoomJoinForm
   )
 }
 
-export default RoomJoinForm
+export default RoomJoinForm
