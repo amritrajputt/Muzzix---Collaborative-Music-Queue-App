@@ -12,14 +12,16 @@ class SongService {
 
   static async addSong(spaceId: string, guestUuid: string, youtubeURL: string, clerkUserId?: string | null) {
     try {
-      if (!isValidYoutubeLink(youtubeURL)) {
-        throw ApiError.badRequest("Invalid youtube URL")
+      if (youtubeURL.includes("/shorts/") || youtubeURL.includes("/live/")) {
+        throw ApiError.badRequest("Shorts and Live streams are not supported")
       }
 
       const videoId = extractVideoId(youtubeURL)
       if (!videoId) {
         throw ApiError.badRequest("Invalid youtube URL")
       }
+
+      const normalizedURL = `https://www.youtube.com/watch?v=${videoId}`
 
       // Check if space exists and determine if the user is the creator
       const spaceResult = await db.select().from(spaces).where(eq(spaces.id, spaceId)).limit(1)
@@ -57,7 +59,7 @@ class SongService {
       let title = ""
       let thumbnail = ""
       try {
-        const response = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(youtubeURL)}&format=json`)
+        const response = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(normalizedURL)}&format=json`)
         if (!response.ok) {
           throw new Error("oembed response not OK")
         }

@@ -1,6 +1,14 @@
 export const extractVideoId = (url: string): string | null => {
   if (!url) return null
 
+  // Explicitly reject Shorts and Live streams
+  if (url.includes("/shorts/") || url.includes("/live/")) {
+    return null
+  }
+
+  // 0. If it's a plain video ID (exactly 11 characters)
+  if (/^[a-zA-Z0-9_-]{11}$/.test(url)) return url
+
   // 1. Check for youtu.be/ID (Share option)
   const youtuBeMatch = url.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/)
   if (youtuBeMatch) return youtuBeMatch[1]
