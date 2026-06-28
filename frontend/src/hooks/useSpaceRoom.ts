@@ -132,9 +132,6 @@ export function useSpaceRoom(spaceId: string) {
     onNowPlayingChanged: (song) => {
       setNowPlaying(song);
     },
-    onPlaybackStateChanged: () => {
-      // Handled inside useYoutubePlayer by listening to socket directly
-    },
     onTimeSynced: () => {
       setTimeSynced(true);
     },

@@ -12,7 +12,6 @@ export const getServerTime = (): number => {
 interface UseSpaceSocketCallbacks {
   onQueueUpdated: (queue: any[]) => void;
   onNowPlayingChanged: (song: any) => void;
-  onPlaybackStateChanged: (data: { isPlaying: boolean; currentTime: number }) => void;
   onTimeSynced?: () => void;
 }
 
@@ -72,9 +71,6 @@ export function useSpaceSocket(
       callbacksRef.current.onNowPlayingChanged(data?.song || null);
     });
 
-    socket.on('playback-state-changed', (data: { isPlaying: boolean; currentTime: number }) => {
-      callbacksRef.current.onPlaybackStateChanged(data);
-    });
 
     // Clean up
     return () => {
