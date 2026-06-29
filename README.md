@@ -4,23 +4,6 @@ A high-performance, real-time collaborative music room application. Hosts create
 
 ---
 
-## 🏗️ System Architecture & Data Flow
-
-```mermaid
-flowchart TD
-    Client[React Frontend / YT Iframe API] <-->|Socket.IO Events| WS[Node.js WebSocket Server]
-    ClientClient[Guest / Host Client] -->|HTTPS REST| API[Express API Server]
-    API -->|Auth Verification| Clerk[Clerk Auth Services]
-    API <-->|Drizzle ORM| DB[(PostgreSQL Database)]
-    API <-->|Queue / Rate Limits| Redis[(Redis Key-Value Cache)]
-    WS <-->|Pub/Sub Sync| Redis
-    DB <-->|Sync State| Redis
-```
-
-Muzzix splits its data engine between **PostgreSQL** (durability for users, plan limits, spaces metadata, and members) and **Redis** (ephemeral real-time queues, concurrent rate limits, active playback states, and pub/sub room synchronizations).
-
----
-
 ## 🧠 Core Engineering Challenges & Solutions
 
 ### 1. Latency-Compensated Playback Synchronization (The Clock Skew Problem)
